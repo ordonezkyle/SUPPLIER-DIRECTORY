@@ -86,12 +86,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['datafile'])) {
             $company = $data[$colMap['company']] ?? '';
             $status  = $data[$colMap['status']] ?? '';
             $remarks = $data[$colMap['remarks']] ?? '';
+            $officer = $data[$colMap['officer']] ?? '';
+            $position = $data[$colMap['position']] ?? '';
+            $email = $data[$colMap['email']] ?? '';
         } else {
             // fallback positional: company,category,status,remarks
             if (count($data) < 3) continue;
             $company = $data[0];
             $status  = $data[2] ?? '';
             $remarks = $data[3] ?? null;
+            $officer = '';
+            $position = '';
+            $email = '';
         }
         // optionally interpret status term 'inactive' in remarks
         if (!$status && stripos($remarks, 'inactive') !== false) {
@@ -99,6 +105,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['datafile'])) {
         }
         $stmt = $pdo->prepare('INSERT INTO companies (company_name, category, status, remarks) VALUES (?, ?, ?, ?)');
         $stmt->execute([$company, null, $status ?: 'Active', $remarks]);
+        $companyId = $pdo->lastInsertId();
+        if ($officer) {
+            $stmt2 = $pdo->prepare('INSERT INTO officers (company_id, officer_name, position, email) VALUES (?, ?, ?, ?)');
+            $stmt2->execute([$companyId, $officer, $position ?: null, $email ?: null]);
+        }
         $importedRows[] = $data;
     }
 

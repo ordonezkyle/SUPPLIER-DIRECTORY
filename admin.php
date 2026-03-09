@@ -6,6 +6,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['add_company'])) {
         $stmt = $pdo->prepare('INSERT INTO companies (company_name, category, status, remarks) VALUES (?, ?, ?, ?)');
         $stmt->execute([$_POST['company_name'], $_POST['category'], $_POST['status'], $_POST['remarks']]);
+        $companyId = $pdo->lastInsertId();
+        // if officer data supplied, insert into officers table
+        if (!empty($_POST['officer_name'])) {
+            $stmt2 = $pdo->prepare('INSERT INTO officers (company_id, officer_name, position, email, phone) VALUES (?, ?, ?, ?, ?)');
+            $stmt2->execute([
+                $companyId,
+                $_POST['officer_name'],
+                $_POST['position'] ?: null,
+                $_POST['officer_email'] ?: null,
+                $_POST['officer_phone'] ?: null,
+            ]);
+        }
     }
     if (isset($_POST['toggle_status']) && isset($_POST['company_id'])) {
         $stmt = $pdo->prepare('UPDATE companies SET status = ? WHERE company_id = ?');
@@ -17,7 +29,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$companies = $pdo->query('SELECT * FROM companies ORDER BY company_name')->fetchAll();
+$companies = $pdo->query("SELECT c.company_id, c.company_name, c.category, c.status, c.remarks,
+                                 o.officer_name, o.position, o.email, o.phone
+                          FROM companies c
+                          LEFT JOIN officers o ON o.company_id = c.company_id
+                          ORDER BY c.company_name")->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -39,6 +55,18 @@ $companies = $pdo->query('SELECT * FROM companies ORDER BY company_name')->fetch
         <input type="hidden" name="add_company" value="1">
         <div class="col-md-4">
             <input type="text" name="company_name" class="form-control" placeholder="Company Name" required>
+        </div>
+        <div class="col-md-4">
+            <input type="text" name="officer_name" class="form-control" placeholder="Officer Name">
+        </div>
+        <div class="col-md-2">
+            <input type="text" name="position" class="form-control" placeholder="Position">
+        </div>
+        <div class="col-md-4">
+            <input type="email" name="officer_email" class="form-control" placeholder="Email">
+        </div>
+        <div class="col-md-2">
+            <input type="text" name="officer_phone" class="form-control" placeholder="Contact number">
         </div>
         <div class="col-md-2">
             <select name="category" class="form-select">
@@ -63,13 +91,24 @@ $companies = $pdo->query('SELECT * FROM companies ORDER BY company_name')->fetch
 
     <h2>Existing Suppliers</h2>
     <table class="table table-bordered">
-        <thead><tr><th>Name</th><th>Category</th><th>Status</th><th>Action</th></tr></thead>
+        <thead><tr><th>Company</th><th>Officer</th><th>Position</th><th>Email</th><th>Phone</th><th>Category</th><th>Status</th><th>Action</th></tr></thead>
         <tbody>
-        <?php foreach ($companies as $c): ?>
-            <tr>
+        <?php foreach ($companies as $c): 
+            $rowClass = '';
+            if ($c['status'] === 'Active') {
+                $rowClass = 'table-success';
+            } elseif ($c['status'] === 'Inactive') {
+                $rowClass = 'table-danger';
+            }
+        ?>
+            <tr class="<?= $rowClass ?>">
                 <td><?=htmlspecialchars($c['company_name'])?></td>
+                <td><?=htmlspecialchars($c['officer_name'])?></td>
+                <td><?=htmlspecialchars($c['position'])?></td>
+                <td><?=htmlspecialchars($c['email'])?></td>
+                <td><?=htmlspecialchars($c['phone'])?></td>
                 <td><?=htmlspecialchars($c['category'])?></td>
-                <td><?=htmlspecialchars($c['status'])?></td>
+                <td><span class="badge <?= $c['status'] === 'Active' ? 'bg-success' : 'bg-danger' ?>"><?=htmlspecialchars($c['status'])?></span></td>
                 <td>
                     <form method="post" style="display:inline">
                         <input type="hidden" name="company_id" value="<?=$c['company_id']?>">

@@ -56,6 +56,7 @@ The importer is flexible: it examines the first row for header names and maps th
 - **Officers**
 - **Position**
 - **Email Address**
+- **Contact Number** (or **Phone**)
 - **Remarks**
 - **Status** (optional)
 
@@ -71,5 +72,9 @@ No. | COMPANY/SUPPLIERS | OFFICERS | POSITION | EMAIL ADDRESS | REMARKS
 ```
 
 Just save that sheet as Excel or CSV and upload it; the script will figure out which column is which and insert the company name plus any status/remarks it finds. A preview of imported rows is shown after upload.
+
+### Admin interface updates
+
+The admin dashboard now includes fields for **officer name**, **position**, **email** and **contact number** when adding a new supplier. Those values are stored in the `officers` table and are visible both in the administration listing and the public directory view.
 
 This prototype demonstrates how you could deploy the described system on PEZA's internal network using XAMPP instead of a standalone MySQL server.

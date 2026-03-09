@@ -42,7 +42,7 @@
     require_once 'config.php';
 
     $sql = "SELECT c.company_id, c.company_name, c.category, c.status,
-                   o.officer_name, o.position, o.email
+                   o.officer_name, o.position, o.email, o.phone
             FROM companies c
             LEFT JOIN officers o ON o.company_id = c.company_id";
     $conditions = [];
@@ -78,17 +78,26 @@
             <th>Officer</th>
             <th>Position</th>
             <th>Email</th>
+            <th>Contact #</th>
             <th>Status</th>
         </tr>
         </thead>
         <tbody>
-        <?php foreach ($rows as $r): ?>
-            <tr>
+        <?php foreach ($rows as $r): 
+            $rowClass = '';
+            if ($r['status'] === 'Active') {
+                $rowClass = 'table-success';
+            } elseif ($r['status'] === 'Inactive') {
+                $rowClass = 'table-danger';
+            }
+        ?>
+            <tr class="<?= $rowClass ?>">
                 <td><?=htmlspecialchars($r['company_name'])?></td>
                 <td><?=htmlspecialchars($r['officer_name'])?></td>
                 <td><?=htmlspecialchars($r['position'])?></td>
                 <td><a href="mailto:<?=htmlspecialchars($r['email'])?>"><?=htmlspecialchars($r['email'])?></a></td>
-                <td><?=htmlspecialchars($r['status'])?></td>
+                <td><?=htmlspecialchars($r['phone'])?></td>
+                <td><span class="badge <?= $r['status'] === 'Active' ? 'bg-success' : 'bg-danger' ?>"><?=htmlspecialchars($r['status'])?></span></td>
             </tr>
         <?php endforeach; ?>
         </tbody>
