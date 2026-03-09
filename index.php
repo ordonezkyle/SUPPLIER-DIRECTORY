@@ -4,14 +4,27 @@
     <meta charset="UTF-8">
     <title>PEZA Supplier Directory</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            /* place your chosen photo in scms/images/ and update the filename below */
+            background: url('images/PEZA-background.jpeg') no-repeat center center fixed;
+            background-size: cover;
+        }
+        /* optionally dim the background behind panels */
+        .container {
+            background-color: rgba(255,255,255,0.9);
+            padding: 1rem;
+            border-radius: 4px;
+        }
+    </style>
 </head>
-<body class="p-4">
+<body>
 <div class="container">
     <h1 class="mb-4">PEZA Supplier &amp; Contact Directory</h1>
 
-    <form method="get" class="row g-2 mb-3">
+    <form method="get" class="row g-2 mb-3 align-items-center">
         <div class="col-md-4">
-            <input type="text" name="q" class="form-control" placeholder="Search company or officer" value="<?=htmlspecialchars(
+            <input autocomplete="off" type="text" name="q" class="form-control" placeholder="Search company or officer" value="<?=htmlspecialchars(
                 $_GET['q'] ?? ''
             )?>">
         </div>
@@ -30,10 +43,10 @@
                 <option value="Development" <?= (isset($_GET['category']) && $_GET['category']==='Development') ? 'selected' : ''?>>Development</option>
             </select>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-4 d-flex gap-2 justify-content-end">
             <button class="btn btn-primary">Search</button>
-        </div>
-        <div class="col-md-2 text-end">
+            <a href="index.php" class="btn btn-secondary">Show All</a>
+            <a href="export.php" class="btn btn-info" target="_blank">Export PDF</a>
             <a href="admin.php" class="btn btn-success">Admin</a>
         </div>
     </form>
@@ -41,16 +54,34 @@
     <?php
     require_once 'config.php';
 
-    $sql = "SELECT c.company_id, c.company_name, c.category, c.status,
+    // use single-quoted string so backticks are treated literally
+    $sql = 'SELECT c.company_id, c.company_name, `c`.`category`, c.status,
                    o.officer_name, o.position, o.email, o.phone
             FROM companies c
-            LEFT JOIN officers o ON o.company_id = c.company_id";
+            LEFT JOIN officers o ON o.company_id = c.company_id';
     $conditions = [];
     $params = [];
 
-    if (!empty($_GET['q'])) {
-        $conditions[] = '(c.company_name LIKE :q OR o.officer_name LIKE :q)';
-        $params[':q'] = '%'.$_GET['q'].'%';
+    if (isset($_GET['q'])) {
+        $q = trim($_GET['q']);
+        if ($q !== '') {
+            // spaces in query should act like wildcards
+            $q = preg_replace('/\s+/', '%', $q);
+            // search across multiple fields; use numbered parameters to avoid reuse issues
+            $conditions[] = '(' .
+                'c.company_name LIKE :q1 OR ' .
+                'o.officer_name LIKE :q2 OR ' .
+                'o.position LIKE :q3 OR ' .
+                'o.email LIKE :q4 OR ' .
+                'o.phone LIKE :q5 OR ' .
+                'c.category LIKE :q6 OR ' .
+                'c.remarks LIKE :q7' .
+                ')';
+            $like = '%'.$q.'%';
+            for ($i = 1; $i <= 7; $i++) {
+                $params[":q$i"] = $like;
+            }
+        }
     }
     if (!empty($_GET['status'])) {
         $conditions[] = 'c.status = :status';

@@ -22,19 +22,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['datafile'])) {
 
     $rows = [];
 
-    if (in_array($ext, ['xls', 'xlsx']) && class_exists('IOFactory')) {
-        // parse with PhpSpreadsheet
-        $spreadsheet = \IOFactory::load($tmpName);
-        $sheet = $spreadsheet->getActiveSheet();
-        foreach ($sheet->getRowIterator() as $i => $row) {
-            if ($i === 1) continue; // skip header
-            $cellIterator = $row->getCellIterator();
-            $cellIterator->setIterateOnlyExistingCells(false);
-            $data = [];
-            foreach ($cellIterator as $cell) {
-                $data[] = trim($cell->getValue());
+    if (in_array($ext, ['xls', 'xlsx'])) {
+        if (class_exists('IOFactory')) {
+            // parse with PhpSpreadsheet
+            $spreadsheet = \IOFactory::load($tmpName);
+            $sheet = $spreadsheet->getActiveSheet();
+            foreach ($sheet->getRowIterator() as $i => $row) {
+                if ($i === 1) continue; // skip header
+                $cellIterator = $row->getCellIterator();
+                $cellIterator->setIterateOnlyExistingCells(false);
+                $data = [];
+                foreach ($cellIterator as $cell) {
+                    $data[] = trim($cell->getValue());
+                }
+                $rows[] = $data;
             }
-            $rows[] = $data;
+        } else {
+            // library missing; can't handle Excel
+            $message = 'Unable to parse Excel file – please install PhpSpreadsheet or upload CSV instead.';
         }
     } else {
         // fallback to CSV
@@ -122,10 +127,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['datafile'])) {
     <meta charset="UTF-8">
     <title>CSV Import</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            /* place your chosen photo in scms/images/ and update the filename below */
+            background: url('images/PEZA-background.jpeg') no-repeat center center fixed;
+            background-size: cover;
+        }
+        .container {
+            background-color: rgba(255,255,255,0.9);
+            padding: 1rem;
+            border-radius: 4px;
+        }
+    </style>
 </head>
-<body class="p-4">
+<body>
 <div class="container">
     <h1>Import Suppliers from Excel/CSV</h1>
+    <p><a href="index.php" title="Back to directory">🏠</a></p>
     <?php if ($message): ?><div class="alert alert-success"><?=htmlspecialchars($message)?></div><?php endif; ?>
     <form method="post" enctype="multipart/form-data">
         <div class="mb-3">

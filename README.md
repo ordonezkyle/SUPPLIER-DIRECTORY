@@ -36,6 +36,7 @@ then visit `import.php` and upload the file.
 - Add export to Excel/PDF
 - Colour-code rows or add status badges
 - Implement audit trail and vendor self‑update portal
+- Add PDF export button in directory view
 
 ### Importing Excel files
 
@@ -46,9 +47,24 @@ cd C:\xampp\htdocs\scms
 composer require phpoffice/phpspreadsheet
 ```
 
-If you don't use Composer the page will fall back to CSV-only import.
+If you don't use Composer the page will fall back to CSV-only import. **Note:** uploading an `.xls`/`.xlsx` file without installing PhpSpreadsheet will now produce an explicit warning and no data will be read; convert to CSV or install the library first.
 
 #### Accepted column layout
+
+### PDF Export
+
+A new **Export PDF** button appears next to the search form. It will generate a printable
+PDF of the current filtered list. The feature normally relies on [Dompdf](https://github.com/dompdf/dompdf).
+Install it via Composer before using:
+
+```bash
+composer require dompdf/dompdf
+```
+
+If Dompdf is not installed you will still be able to click the button – the script
+will fall back to downloading a **CSV** file instead, so you can export the same
+data even without Composer or the library.
+
 
 The importer is flexible: it examines the first row for header names and maps the following columns automatically. Supported headings include variants like:
 
@@ -76,5 +92,7 @@ Just save that sheet as Excel or CSV and upload it; the script will figure out w
 ### Admin interface updates
 
 The admin dashboard now includes fields for **officer name**, **position**, **email** and **contact number** when adding a new supplier. Those values are stored in the `officers` table and are visible both in the administration listing and the public directory view.
+
+You can place your PEZA building image (for example `PEZA-background.jpg`) under `scms/images/` and it will automatically show behind every page, scaled to cover the screen. Make sure the filename in the CSS (see the `<style>` block in `index.php`/`admin.php`/`import.php`) matches the actual file name you use. The content containers have a semi‑opaque white background so the text remains readable.
 
 This prototype demonstrates how you could deploy the described system on PEZA's internal network using XAMPP instead of a standalone MySQL server.
