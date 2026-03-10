@@ -2,6 +2,12 @@
 // import.php - simple importer for the companies table (CSV or Excel)
 require_once 'config.php';
 
+// require admin login
+if (empty($_SESSION['logged_in'])) {
+    header('Location: login.php');
+    exit;
+}
+
 // try to load PhpSpreadsheet if available
 if (file_exists(__DIR__ . '/vendor/autoload.php')) {
     require __DIR__ . '/vendor/autoload.php';
@@ -134,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['datafile'])) {
             background-size: cover;
         }
         .container {
-            background-color: rgba(255,255,255,0.9);
+            background-color: rgba(148, 148, 148, 0.9);
             padding: 1rem;
             border-radius: 4px;
         }
@@ -142,7 +148,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['datafile'])) {
 </head>
 <body>
 <div class="container">
-    <h1>Import Suppliers from Excel/CSV</h1>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="m-0">Import Suppliers from Excel/CSV</h1>
+        <a href="admin.php?action=logout" class="btn btn-outline-secondary btn-sm">Logout</a>
+    </div>
     <p><a href="index.php" title="Back to directory">🏠</a></p>
     <?php if ($message): ?><div class="alert alert-success"><?=htmlspecialchars($message)?></div><?php endif; ?>
     <form method="post" enctype="multipart/form-data">

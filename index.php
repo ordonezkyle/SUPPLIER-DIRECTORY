@@ -1,3 +1,7 @@
+<?php
+// ensure session and config are loaded before any output
+require_once 'config.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -47,13 +51,15 @@
             <button class="btn btn-primary">Search</button>
             <a href="index.php" class="btn btn-secondary">Show All</a>
             <a href="export.php" class="btn btn-info" target="_blank">Export PDF</a>
-            <a href="admin.php" class="btn btn-success">Admin</a>
+            <?php if (!empty($_SESSION['logged_in'])): ?>
+                <a href="admin.php" class="btn btn-success">Admin</a>
+            <?php else: ?>
+                <a href="login.php" class="btn btn-success">Admin</a>
+            <?php endif; ?>
         </div>
     </form>
 
     <?php
-    require_once 'config.php';
-
     // use single-quoted string so backticks are treated literally
     $sql = 'SELECT c.company_id, c.company_name, `c`.`category`, c.status,
                    o.officer_name, o.position, o.email, o.phone
@@ -105,11 +111,11 @@
     <table class="table table-bordered mt-3">
         <thead>
         <tr>
-            <th>Company</th>
+            <th>Company/Supplier</th>
             <th>Officer</th>
             <th>Position</th>
             <th>Email</th>
-            <th>Contact #</th>
+            <th>Contact Number</th>
             <th>Status</th>
         </tr>
         </thead>

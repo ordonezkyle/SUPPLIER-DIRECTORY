@@ -24,6 +24,25 @@ It uses a **PHP + MySQL** stack running under **XAMPP** (Apache distribution wit
 `config.php` uses the default XAMPP credentials (`root` user with no password) and connects to database `peza_scms`.
 Modify if you set a password or use a different database name.
 
+### Authentication
+
+A simple login page now protects the administrative dashboard (`admin.php`).  By default the credentials are:
+
+```
+username: admin
+password: admin123
+```
+
+The values are defined in `config.php` as `$admin_user` and `$admin_pass_hash`.  To change them, generate a new hash with the built‑in PHP function:
+
+```bash
+php -r "echo password_hash('yourpass', PASSWORD_DEFAULT);"
+```
+
+Then update the variables in `config.php` or, for a more advanced deployment, store them in a database or an environment variable of your choice.
+
+If you log out, use the "Logout" button in the top‑right of the dashboard or visit `admin.php?action=logout`.
+
 ## Data Import
 
 To migrate your existing Excel directory, save it as CSV with columns like `company_name,category,status,remarks`,

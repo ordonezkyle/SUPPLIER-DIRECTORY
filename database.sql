@@ -21,3 +21,10 @@ CREATE TABLE IF NOT EXISTS officers (
     phone VARCHAR(50) DEFAULT NULL,
     FOREIGN KEY (company_id) REFERENCES companies(company_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+-- optional users table for storing administrator credentials
+CREATE TABLE IF NOT EXISTS users (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(100) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL
+) ENGINE=InnoDB;

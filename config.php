@@ -1,6 +1,15 @@
 <?php
 // config.php - database connection for XAMPP environment
 // Adjust credentials if you set a root password in phpMyAdmin
+// start session early for auth
+session_start();
+
+// simple administrator credentials - change as needed
+// the password is stored as a hash; to create your own, run:
+// php -r "echo password_hash('yourpass', PASSWORD_DEFAULT);"
+$admin_user = 'admin';
+$admin_pass_hash = '$2y$10$ms0ce5iiN.vt.xH6KjWTFeEHsdwUznbD5IEhw3WfTJKWbULZMPLG2';
+
 $host = '127.0.0.1';
 $db   = 'peza_scms';
 $user = 'root';

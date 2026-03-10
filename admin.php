@@ -2,6 +2,20 @@
 // Simple admin interface to add or toggle supplier status
 require_once 'config.php';
 
+// redirect to login if not authenticated
+if (empty($_SESSION['logged_in'])) {
+    header('Location: login.php');
+    exit;
+}
+
+// allow logout via query parameter
+if (isset($_GET['action']) && $_GET['action'] === 'logout') {
+    session_unset();
+    session_destroy();
+    header('Location: login.php');
+    exit;
+}
+
 // helpers for rendering inputs/selects with prefilled values
 function inputField($name, $value = '', $placeholder = '', $type = 'text', $class = 'form-control', $autocomplete = 'on') {
     return "<input autocomplete=\"" . htmlspecialchars($autocomplete) . "\" type=\"" . htmlspecialchars($type) . "\" name=\"" . htmlspecialchars($name) . "\" class=\"" . htmlspecialchars($class) . "\" placeholder=\"" . htmlspecialchars($placeholder) . "\" value=\"" . htmlspecialchars($value) . "\">";
@@ -107,7 +121,10 @@ $companies = $pdo->query('SELECT c.company_id, c.company_name, `c`.`category`, c
 </head>
 <body>
 <div class="container">
-    <h1 class="mb-4">Admin Dashboard</h1>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="m-0">Admin Dashboard</h1>
+        <a href="admin.php?action=logout" class="btn btn-outline-secondary btn-sm">Logout</a>
+    </div>
 
     <div class="mb-3">
         <a href="import.php" class="btn btn-secondary">Import Excel/CSV</a>
