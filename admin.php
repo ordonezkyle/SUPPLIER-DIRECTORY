@@ -123,7 +123,13 @@ $companies = $pdo->query('SELECT c.company_id, c.company_name, `c`.`category`, c
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="m-0">Admin Dashboard</h1>
-        <a href="admin.php?action=logout" class="btn btn-outline-secondary btn-sm">Logout</a>
+        <div>
+            <a href="market_scoping.php" class="btn btn-outline-success btn-sm me-2">Market Scoping</a>
+            <a href="ppmp.php" class="btn btn-outline-info btn-sm me-2">PPMP</a>
+            <a href="rfq.php" class="btn btn-outline-secondary btn-sm me-2">RFQ</a>
+            <a href="pmis_dashboard.php" class="btn btn-outline-warning btn-sm me-2">PMIS Dashboard</a>
+            <a href="admin.php?action=logout" class="btn btn-outline-secondary btn-sm">Logout</a>
+        </div>
     </div>
 
     <div class="mb-3">

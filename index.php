@@ -10,21 +10,42 @@ require_once 'config.php';
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <style>
         body {
-            /* place your chosen photo in scms/images/ and update the filename below */
             background: url('images/PEZA-background.jpeg') no-repeat center center fixed;
             background-size: cover;
         }
-        /* optionally dim the background behind panels */
         .container {
             background-color: rgba(255,255,255,0.9);
             padding: 1rem;
             border-radius: 4px;
         }
+        .sidebar {
+            min-width: 220px;
+            margin-right: 1rem;
+        }
+        .sidebar .nav-link {
+            display: block;
+            margin-bottom: 0.4rem;
+            color: #0d6efd;
+        }
+        .sidebar .nav-link:hover { color: #084298; }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1 class="mb-4">PEZA Supplier &amp; Contact Directory</h1>
+    <div class="d-flex align-items-start mb-4">
+        <nav class="sidebar">
+            <h5>Quick Modules</h5>
+            <a href="market_scoping.php" class="nav-link">Market Scoping</a>
+            <a href="ppmp.php" class="nav-link">PPMP</a>
+            <a href="rfq.php" class="nav-link">RFQ</a>
+            <a href="market_checklist.php" class="nav-link">Market Checklist</a>
+            <a href="market_analysis.php" class="nav-link">Market Analysis</a>
+            <a href="price_comparison.php" class="nav-link">Price Comparison</a>
+            <a href="procurement_reports.php" class="nav-link">Procurement Reports</a>
+            <a href="pmis_dashboard.php" class="nav-link">PMIS Dashboard</a>
+        </nav>
+        <div class="flex-fill">
+            <h1 class="mb-3">PEZA Supplier &amp; Contact Directory</h1>
 
     <form method="get" class="row g-2 mb-3 align-items-center">
         <div class="col-md-4">
@@ -49,8 +70,6 @@ require_once 'config.php';
         </div>
         <div class="col-md-4 d-flex gap-2 justify-content-end">
             <button class="btn btn-primary">Search</button>
-            <a href="index.php" class="btn btn-secondary">Show All</a>
-            <a href="export.php" class="btn btn-info" target="_blank">Export PDF</a>
             <?php if (!empty($_SESSION['logged_in'])): ?>
                 <a href="admin.php" class="btn btn-success">Admin</a>
             <?php else: ?>

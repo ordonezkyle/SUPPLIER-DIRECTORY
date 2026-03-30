@@ -115,3 +115,256 @@ The admin dashboard now includes fields for **officer name**, **position**, **em
 You can place your PEZA building image (for example `PEZA-background.jpg`) under `scms/images/` and it will automatically show behind every page, scaled to cover the screen. Make sure the filename in the CSS (see the `<style>` block in `index.php`/`admin.php`/`import.php`) matches the actual file name you use. The content containers have a semi‑opaque white background so the text remains readable.
 
 This prototype demonstrates how you could deploy the described system on PEZA's internal network using XAMPP instead of a standalone MySQL server.
+
+## 1. Enterprise System Architecture (High-Level)
+
++-------------------------------------------------------------+
+|                       USERS                                 |
+|-------------------------------------------------------------|
+| End User Unit | Procurement Officer | BAC Member | Admin   |
++-------------------------------------------------------------+
+                          │
+                          ▼
++-------------------------------------------------------------+
+|                 WEB APPLICATION PORTAL                      |
+|-------------------------------------------------------------|
+| Dashboard | Market Scoping | PPMP | RFQ | Bid Evaluation    |
+| Supplier Database | Reports | Analytics                     |
++-------------------------------------------------------------+
+                          │
+                          ▼
++-------------------------------------------------------------+
+|                  APPLICATION SERVER                         |
+|-------------------------------------------------------------|
+| Business Logic Layer                                        |
+| • Procurement Workflow Engine                               |
+| • Market Analysis Engine                                    |
+| • Document Generation Engine                                |
+| • Approval Workflow                                         |
++-------------------------------------------------------------+
+                          │
+                          ▼
++-------------------------------------------------------------+
+|                        DATABASE                             |
+|-------------------------------------------------------------|
+| Procurement Projects                                        |
+| Market Scoping Data                                         |
+| Supplier Information                                        |
+| Procurement Documents                                       |
+| Audit Logs                                                  |
++-------------------------------------------------------------+
+                          │
+                          ▼
++-------------------------------------------------------------+
+|                DOCUMENT STORAGE SERVER                      |
+|-------------------------------------------------------------|
+| Uploaded Files                                              |
+| Generated Reports (PDF / DOCX)                              |
+| Procurement Archives                                        |
++-------------------------------------------------------------+
+
+## 2. Core System Modules
+
+### 2.1 Market Scoping Module
+
+Functions:
+
+- Create market scoping records
+- Upload supplier quotations
+- Conduct market analysis
+- Generate market scoping report
+
+Output:
+
+- ✔ Market Scoping Report
+- ✔ Supplier price comparison
+
+### 2.2 Procurement Planning Module (PPMP)
+
+Features:
+
+- Create procurement plan
+- Budget allocation
+- Project scheduling
+
+Example record:
+
+- Project Name: Interactive Display Procurement
+- Budget: ₱85,000
+- Procurement Method: Shopping / RFQ
+- Implementation Year: 2026
+
+### 2.3 RFQ Management Module
+
+Generates Request for Quotation automatically.
+
+Example:
+
+Request for Quotation
+
+Project: Interactive Display Procurement
+
+Suppliers Invited:
+• ABC Technology
+• Metro Office Supply
+• Delta Systems
+
+Submission Deadline:
+April 10, 2026
+
+### 2.4 Supplier Intelligence Module
+
+Tracks supplier performance.
+
+Example dashboard:
+
+Supplier	Projects	Rating	Delivery Time
+ABC Tech	12	★★★★★	25 days
+Delta Systems	7	★★★★	30 days
+Metro Office	5	★★★	35 days
+
+### 2.5 Procurement Analytics Dashboard
+
+Shows trends.
+
+Example metrics:
+
+Procurement Categories
+
+ICT Equipment      ████████████ 40%
+Office Supplies    ███████      20%
+Infrastructure     ██████       18%
+Maintenance        █████        12%
+Other              ████         10%
+
+## 3. Workflow Automation
+
+Procurement stages automated in the system.
+
+Market Scoping
+      │
+      ▼
+PPMP Preparation
+      │
+      ▼
+RFQ Generation
+      │
+      ▼
+Supplier Quotation Submission
+      │
+      ▼
+Bid Evaluation
+      │
+      ▼
+Award Recommendation
+      │
+      ▼
+Procurement Report
+
+Every step is logged and traceable.
+
+## 4. Security Architecture
+
+For government compliance.
+
+- Authentication
+- Active Directory login
+- Role-based access
+
+### Roles
+
+Role	Access
+End User	Create procurement
+Procurement Officer	Manage RFQ
+BAC Member	Evaluate bids
+Division Chief	Approve procurement
+System Admin	Manage system
+
+### Security Features
+
+- ✔ Audit trail
+- ✔ File encryption
+- ✔ Backup system
+- ✔ Document versioning
+
+## 5. Database Structure (Core Tables)
+
+### Projects
+- project_id
+- project_name
+- budget
+- end_user_unit
+- implementation_year
+- status
+
+### Market Scoping
+- scoping_id
+- project_id
+- activity_consultation
+- activity_conference
+- activity_price_sourcing
+- activity_philgeps
+- recommendation
+
+### Suppliers
+- supplier_id
+- supplier_name
+- contact_person
+- industry_category
+- performance_rating
+
+### Quotations
+- quotation_id
+- project_id
+- supplier_id
+- price
+- delivery_time
+- submission_date
+
+## 6. Infrastructure Deployment
+
+Typical government deployment setup.
+
+Users
+ │
+ ▼
+Government Network
+ │
+ ▼
+Load Balancer
+ │
+ ▼
+Web Server
+ │
+ ▼
+Application Server
+ │
+ ▼
+Database Server
+ │
+ ▼
+Backup Server
+
+Hosting options:
+
+- Government Data Center
+- Private Cloud
+- On-Premise Server
+
+## 7. Estimated Implementation Cost
+
+System Level	Estimated Cost
+Basic Market Scoping System	₱50k–₱150k
+Full Procurement System	₱300k–₱800k
+Enterprise Government Platform	₱1M+
+
+## 8. Expected Benefits
+
+Time savings:
+
+Task	Manual	System
+Market Scoping	2 days	30 minutes
+PPMP Preparation	1 day	10 minutes
+RFQ Generation	2 hours	1 minute
+
+Transparency improves because all actions are recorded.
