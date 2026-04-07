@@ -23,7 +23,7 @@ $projects = $pdo->query('SELECT DISTINCT project_name FROM market_scoping ORDER 
 ?>
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><title>Procurement Reports</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"><style>body{background:url('images/PEZA-background.jpeg') no-repeat center center fixed;background-size:cover;}.container{background:rgba(255,255,255,0.95);padding:1rem;margin:20px;border-radius:4px;}</style></head><body>
-<div class="container"><h1>Generated Procurement Reports</h1><p><a href="pmis_dashboard.php">Dashboard</a></p>
+<div class="container"><h1>Generated Procurement Reports</h1><p><a href="index.php" class="btn btn-sm btn-outline-secondary me-2">Directory</a><a href="pmis_dashboard.php" class="btn btn-sm btn-outline-secondary">Dashboard</a></p>
 <form method="post" class="row g-3 mb-3">
     <input type="hidden" name="add_report" value="1">
     <div class="col-md-4"><label class="form-label">Project Name</label><select name="project_name" class="form-select" required><option value="">-- select --</option><?php foreach ($projects as $p): ?><option><?=htmlspecialchars($p['project_name'])?></option><?php endforeach; ?></select></div>

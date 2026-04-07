@@ -299,13 +299,13 @@ if (!in_array($tab, $allowedTabs, true)) {
         <h2>MENU</h2>
         <hr style="border-color:#6c757d">
         <a href="pmis_dashboard.php">Dashboard</a>
+        <a href="index.php" class="ps-3">Directory</a>
         <div class="mt-2"><strong>Procurement Management</strong></div>
         <a href="market_scoping.php" class="ps-3">Market Scoping</a>
         <a href="pmis_dashboard.php" class="ps-3">PPMP</a>
         <a href="pmis_dashboard.php" class="ps-3">RFQ</a>
         <a href="pmis_dashboard.php" class="ps-3">Bid Evaluation</a>
         <div class="mt-2"><strong>Supplier Management</strong></div>
-        <a href="index.php" class="ps-3">Supplier Database</a>
         <a href="pmis_dashboard.php" class="ps-3">Supplier Ratings</a>
         <div class="mt-2"><strong>Analytics</strong></div>
         <a href="pmis_dashboard.php" class="ps-3">Market Price Analysis</a>
@@ -327,7 +327,7 @@ if (!in_array($tab, $allowedTabs, true)) {
         </div>
 
         <ul class="nav nav-tabs mb-3">
-            <?php foreach (['dashboard'=>'Dashboard', 'market_scoping'=>'Market Scoping', 'ppmp'=>'PPMP', 'rfq'=>'RFQ', 'analysis'=>'Analysis', 'reports'=>'Reports'] as $key => $label): ?>
+            <?php foreach (['dashboard'=>'Dashboard', 'market_scoping'=>'Market Scoping', 'ppmp'=>'PPMP', 'rfq'=>'RFQ', 'analysis'=>'Market Scoping Checklist', 'reports'=>'Reports'] as $key => $label): ?>
                 <li class="nav-item"><a class="nav-link <?= $tab === $key ? 'active' : '' ?>" href="?tab=<?= $key ?>"><?=htmlspecialchars($label)?></a></li>
             <?php endforeach; ?>
         </ul>
@@ -397,8 +397,7 @@ if (!in_array($tab, $allowedTabs, true)) {
             <?php elseif ($tab === 'rfq'): ?>
                 <iframe src="rfq.php" style="width:100%; height:75vh; border:1px solid #ddd;"></iframe>
             <?php elseif ($tab === 'analysis'): ?>
-                <iframe src="market_analysis.php" style="width:100%; height:37vh; border:1px solid #ddd;"></iframe>
-                <iframe src="market_checklist.php" style="width:100%; height:37vh; border:1px solid #ddd; margin-top:1rem;"></iframe>
+                <iframe src="market_scoping_checklist.php" style="width:100%; height:85vh; border:1px solid #ddd;"></iframe>
             <?php elseif ($tab === 'reports'): ?>
                 <iframe src="procurement_reports.php" style="width:100%; height:75vh; border:1px solid #ddd;"></iframe>
             <?php endif; ?>

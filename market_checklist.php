@@ -42,8 +42,7 @@ $checklists = $pdo->query('SELECT msc.*, ms.project_name FROM market_scoping_che
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><title>Market Scoping Checklist</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"><style>body{background:url('images/PEZA-background.jpeg') no-repeat center center fixed;background-size:cover;}.container{background-color:rgba(255,255,255,0.95);padding:1rem;border-radius:4px;margin:20px;} .sidebar-link{margin-right:8px;}</style></head><body>
 <div class="container">
-    <h1>Market Scoping Activities Checklist</h1>
-    <p><a class="sidebar-link" href="market_scoping.php">Back to Market Scoping</a> <a class="sidebar-link" href="pmis_dashboard.php">Dashboard</a></p>
+    <p><a class="sidebar-link btn btn-sm btn-outline-secondary" href="index.php">Directory</a> <a class="sidebar-link" href="market_scoping.php">Back to Market Scoping</a> <a class="sidebar-link" href="pmis_dashboard.php">Dashboard</a></p>
 
     <form method="post" class="row g-3 mb-3">
         <input type="hidden" name="save_checklist" value="1">

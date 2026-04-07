@@ -59,6 +59,7 @@ $rfqs = $pdo->query('SELECT * FROM rfq_requests ORDER BY created_at DESC')->fetc
         <h1>RFQ Management</h1>
         <div>
             <a href="pmis_dashboard.php" class="btn btn-sm btn-outline-secondary">Dashboard</a>
+            <a href="index.php" class="btn btn-sm btn-outline-dark">Directory</a>
             <a href="market_scoping.php" class="btn btn-sm btn-outline-primary">Market Scoping</a>
             <a href="ppmp.php" class="btn btn-sm btn-outline-info">PPMP</a>
         </div>

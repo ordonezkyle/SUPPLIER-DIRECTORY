@@ -88,6 +88,7 @@ $plans = $pdo->query('SELECT * FROM ppmp_plans ORDER BY created_at DESC')->fetch
         <h1>PPMP Module</h1>
         <div>
             <a href="pmis_dashboard.php" class="btn btn-sm btn-outline-secondary">Dashboard</a>
+            <a href="index.php" class="btn btn-sm btn-outline-dark">Directory</a>
             <a href="market_scoping.php" class="btn btn-sm btn-outline-primary">Market Scoping</a>
             <a href="rfq.php" class="btn btn-sm btn-outline-success">RFQ</a>
         </div>

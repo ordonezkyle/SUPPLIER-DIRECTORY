@@ -12,22 +12,67 @@ require_once 'config.php';
         body {
             background: url('images/PEZA-background.jpeg') no-repeat center center fixed;
             background-size: cover;
+            min-height: 100vh;
+            margin: 0;
         }
         .container {
-            background-color: rgba(255,255,255,0.9);
-            padding: 1rem;
-            border-radius: 4px;
+            background-color: rgba(255,255,255,0.96);
+            padding: 1.5rem;
+            border-radius: 16px;
+            box-shadow: 0 20px 45px rgba(0,0,0,0.12);
         }
         .sidebar {
-            min-width: 220px;
-            margin-right: 1rem;
+            min-width: 260px;
+            margin-right: 1.25rem;
+            padding: 1rem 1rem 0.85rem;
+            background: rgba(255,255,255,0.98);
+            border-radius: 16px;
+            border: 1px solid rgba(13, 110, 253, 0.08);
+            box-shadow: 0 10px 30px rgba(13, 110, 253, 0.06);
+            animation: slideIn 0.5s ease forwards;
+        }
+        .sidebar h5 {
+            margin-bottom: 1rem;
+            font-size: 1.05rem;
+            letter-spacing: 0.02em;
+            color: #0d6efd;
         }
         .sidebar .nav-link {
             display: block;
-            margin-bottom: 0.4rem;
+            margin-bottom: 0.5rem;
+            padding: 0.65rem 0.9rem;
+            border-radius: 12px;
             color: #0d6efd;
+            transition: transform 0.25s ease, background-color 0.25s ease, color 0.25s ease;
+            background: rgba(13, 110, 253, 0.05);
         }
-        .sidebar .nav-link:hover { color: #084298; }
+        .sidebar .nav-link:hover {
+            color: #fff;
+            background: #0d6efd;
+            transform: translateX(6px);
+            text-decoration: none;
+        }
+        .sidebar .nav-link:nth-child(2) { animation: popIn 0.45s ease both; }
+        .sidebar .nav-link:nth-child(3) { animation: popIn 0.47s ease both; }
+        .sidebar .nav-link:nth-child(4) { animation: popIn 0.49s ease both; }
+        .sidebar .nav-link:nth-child(5) { animation: popIn 0.51s ease both; }
+        .sidebar .nav-link:nth-child(6) { animation: popIn 0.53s ease both; }
+        .sidebar .nav-link:nth-child(7) { animation: popIn 0.55s ease both; }
+        .sidebar .nav-link:nth-child(8) { animation: popIn 0.57s ease both; }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes popIn {
+            from { opacity: 0; transform: translateX(-14px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .table th, .table td {
+            vertical-align: middle;
+        }
+        .table thead {
+            background: rgba(13, 110, 253, 0.08);
+        }
     </style>
 </head>
 <body>
@@ -35,14 +80,14 @@ require_once 'config.php';
     <div class="d-flex align-items-start mb-4">
         <nav class="sidebar">
             <h5>Quick Modules</h5>
+            <a href="pmis_dashboard.php" class="nav-link">PMIS Dashboard</a>
             <a href="market_scoping.php" class="nav-link">Market Scoping</a>
             <a href="ppmp.php" class="nav-link">PPMP</a>
             <a href="rfq.php" class="nav-link">RFQ</a>
             <a href="market_checklist.php" class="nav-link">Market Checklist</a>
-            <a href="market_analysis.php" class="nav-link">Market Analysis</a>
+            <a href="market_scoping_checklist.php" class="nav-link">Market Scoping Checklist</a>
             <a href="price_comparison.php" class="nav-link">Price Comparison</a>
             <a href="procurement_reports.php" class="nav-link">Procurement Reports</a>
-            <a href="pmis_dashboard.php" class="nav-link">PMIS Dashboard</a>
         </nav>
         <div class="flex-fill">
             <h1 class="mb-3">PEZA Supplier &amp; Contact Directory</h1>
