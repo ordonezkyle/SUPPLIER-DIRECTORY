@@ -16,7 +16,11 @@ function normalizeCurrency($value) {
     if ($value === '') {
         return null;
     }
-    return round((float)str_replace([',', ' '], '', $value), 2);
+    $value = preg_replace('/[^0-9\.\-]/u', '', $value);
+    if ($value === '' || !is_numeric($value)) {
+        return null;
+    }
+    return round((float)$value, 2);
 }
 
 // ensure table exists and has correct fields
@@ -285,9 +289,23 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
     $stmt = $pdo->prepare('SELECT * FROM market_scoping WHERE scoping_id = ?');
     $stmt->execute([$_GET['edit']]);
     $editScoping = $stmt->fetch();
-    if ($editScoping && empty($editScoping['supplier_id_1']) && !empty($editScoping['supplier_id'])) {
-        $editScoping['supplier_id_1'] = $editScoping['supplier_id'];
-        $editScoping['quotation_1'] = $editScoping['quotation'];
+    if ($editScoping) {
+        if (empty($editScoping['supplier_id_1']) && !empty($editScoping['supplier_id'])) {
+            $editScoping['supplier_id_1'] = $editScoping['supplier_id'];
+            $editScoping['quotation_1'] = $editScoping['quotation'];
+        }
+        for ($i = 1; $i <= 4; $i++) {
+            $supplierNameKey = 'supplier_name_' . $i;
+            $supplierIdKey = 'supplier_id_' . $i;
+            if (empty($editScoping[$supplierNameKey]) && !empty($editScoping[$supplierIdKey])) {
+                $stmt = $pdo->prepare('SELECT company_name FROM companies WHERE company_id = ?');
+                $stmt->execute([$editScoping[$supplierIdKey]]);
+                $company = $stmt->fetch();
+                if ($company) {
+                    $editScoping[$supplierNameKey] = $company['company_name'];
+                }
+            }
+        }
     }
 }
 
@@ -427,7 +445,7 @@ $scopings = $pdo->query($scopingsSql)->fetchAll();
         </div>
         <div class="col-md-4">
             <label class="form-label">Estimated Budget (PHP)</label>
-            <input type="text" name="estimated_budget" inputmode="decimal" pattern="^[0-9,]+(\.[0-9]{2})?$" placeholder="0,000,000.00" class="form-control formatted-money" value="<?= htmlspecialchars($editScoping['estimated_budget'] ?? '') ?>">
+            <input type="text" name="estimated_budget" inputmode="decimal" pattern="^\s*(?:₱|PHP)?\s*[0-9,]+(?:\.[0-9]{2})?\s*$" placeholder="0,000,000.00" class="form-control formatted-money" value="<?= htmlspecialchars($editScoping['estimated_budget'] ?? '') ?>">
         </div>
         <div class="col-md-4">
             <label class="form-label">Market Scoping Period From</label>
@@ -447,50 +465,50 @@ $scopings = $pdo->query($scopingsSql)->fetchAll();
         <div class="col-md-3">
             <label class="form-label">Supplier 1</label>
             <div class="supplier-search-wrapper">
-                <input type="text" name="supplier_name_1" class="form-control supplier-search" placeholder="Type supplier name..." autocomplete="off" required>
-                <input type="hidden" name="supplier_id_1">
+                <input type="text" name="supplier_name_1" class="form-control supplier-search" placeholder="Type supplier name..." autocomplete="off" required value="<?= htmlspecialchars($editScoping['supplier_name_1'] ?? '') ?>">
+                <input type="hidden" name="supplier_id_1" value="<?= htmlspecialchars($editScoping['supplier_id_1'] ?? '') ?>">
                 <div class="supplier-suggestions"></div>
             </div>
         </div>
         <div class="col-md-3">
             <label class="form-label">Quotation 1 (PHP)</label>
-            <input type="text" name="quotation_1" inputmode="decimal" pattern="^[0-9,]+(\.[0-9]{2})?$" placeholder="0,000,000.00" class="form-control formatted-money" value="<?= htmlspecialchars($editScoping['quotation_1'] ?? '') ?>" required>
+            <input type="text" name="quotation_1" inputmode="decimal" pattern="^\s*(?:₱|PHP)?\s*[0-9,]+(?:\.[0-9]{2})?\s*$" placeholder="0,000,000.00" class="form-control formatted-money" value="<?= htmlspecialchars($editScoping['quotation_1'] ?? '') ?>" required>
         </div>
         <div class="col-md-3">
             <label class="form-label">Supplier 2</label>
             <div class="supplier-search-wrapper">
-                <input type="text" name="supplier_name_2" class="form-control supplier-search" placeholder="Type supplier name..." autocomplete="off" required>
-                <input type="hidden" name="supplier_id_2">
+                <input type="text" name="supplier_name_2" class="form-control supplier-search" placeholder="Type supplier name..." autocomplete="off" required value="<?= htmlspecialchars($editScoping['supplier_name_2'] ?? '') ?>">
+                <input type="hidden" name="supplier_id_2" value="<?= htmlspecialchars($editScoping['supplier_id_2'] ?? '') ?>">
                 <div class="supplier-suggestions"></div>
             </div>
         </div>
         <div class="col-md-3">
             <label class="form-label">Quotation 2 (PHP)</label>
-            <input type="text" name="quotation_2" inputmode="decimal" pattern="^[0-9,]+(\.[0-9]{2})?$" placeholder="0,000,000.00" class="form-control formatted-money" value="<?= htmlspecialchars($editScoping['quotation_2'] ?? '') ?>" required>
+            <input type="text" name="quotation_2" inputmode="decimal" pattern="^\s*(?:₱|PHP)?\s*[0-9,]+(?:\.[0-9]{2})?\s*$" placeholder="0,000,000.00" class="form-control formatted-money" value="<?= htmlspecialchars($editScoping['quotation_2'] ?? '') ?>" required>
         </div>
         <div class="col-md-3">
             <label class="form-label">Supplier 3 (optional)</label>
             <div class="supplier-search-wrapper">
-                <input type="text" name="supplier_name_3" class="form-control supplier-search" placeholder="Type supplier name..." autocomplete="off">
-                <input type="hidden" name="supplier_id_3">
+                <input type="text" name="supplier_name_3" class="form-control supplier-search" placeholder="Type supplier name..." autocomplete="off" value="<?= htmlspecialchars($editScoping['supplier_name_3'] ?? '') ?>">
+                <input type="hidden" name="supplier_id_3" value="<?= htmlspecialchars($editScoping['supplier_id_3'] ?? '') ?>">
                 <div class="supplier-suggestions"></div>
             </div>
         </div>
         <div class="col-md-3">
             <label class="form-label">Quotation 3 (PHP)</label>
-            <input type="text" name="quotation_3" inputmode="decimal" pattern="^[0-9,]+(\.[0-9]{2})?$" placeholder="0,000,000.00" class="form-control formatted-money" value="<?= htmlspecialchars($editScoping['quotation_3'] ?? '') ?>">
+            <input type="text" name="quotation_3" inputmode="decimal" pattern="^\s*(?:₱|PHP)?\s*[0-9,]+(?:\.[0-9]{2})?\s*$" placeholder="0,000,000.00" class="form-control formatted-money" value="<?= htmlspecialchars($editScoping['quotation_3'] ?? '') ?>">
         </div>
         <div class="col-md-3">
             <label class="form-label">Supplier 4 (optional)</label>
             <div class="supplier-search-wrapper">
-                <input type="text" name="supplier_name_4" class="form-control supplier-search" placeholder="Type supplier name..." autocomplete="off">
-                <input type="hidden" name="supplier_id_4">
+                <input type="text" name="supplier_name_4" class="form-control supplier-search" placeholder="Type supplier name..." autocomplete="off" value="<?= htmlspecialchars($editScoping['supplier_name_4'] ?? '') ?>">
+                <input type="hidden" name="supplier_id_4" value="<?= htmlspecialchars($editScoping['supplier_id_4'] ?? '') ?>">
                 <div class="supplier-suggestions"></div>
             </div>
         </div>
         <div class="col-md-3">
             <label class="form-label">Quotation 4 (PHP)</label>
-            <input type="text" name="quotation_4" inputmode="decimal" pattern="^[0-9,]+(\.[0-9]{2})?$" placeholder="0,000,000.00" class="form-control formatted-money" value="<?= htmlspecialchars($editScoping['quotation_4'] ?? '') ?>">
+            <input type="text" name="quotation_4" inputmode="decimal" pattern="^\s*(?:₱|PHP)?\s*[0-9,]+(?:\.[0-9]{2})?\s*$" placeholder="0,000,000.00" class="form-control formatted-money" value="<?= htmlspecialchars($editScoping['quotation_4'] ?? '') ?>">
         </div>
         <div class="col-md-4">
             <label class="form-label">Status</label>
@@ -692,7 +710,7 @@ function loadScopingDetails(record) {
 // Money input formatting
 (function() {
     function unformat(value) {
-        return value.replace(/,/g, '').trim();
+        return String(value).replace(/[^0-9.\-]/g, '').trim();
     }
     function format(value) {
         value = unformat(value);
