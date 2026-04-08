@@ -136,56 +136,69 @@ $checklists = $pdo->query('SELECT * FROM market_scoping_checklist ORDER BY creat
     <meta charset="UTF-8">
     <title>MARKET SCOPING CHECKLIST</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background:url('images/PEZA-background.jpeg') no-repeat center center fixed; background-size:cover; }
-        .container { background:rgba(255,255,255,0.98); padding:1.75rem; margin:20px auto; border-radius:8px; max-width:1100px; }
-        .doc-header { border-bottom: 0; padding-bottom: 0; margin-bottom: 1rem; }
-        .doc-title-main { font-size: 1.25rem; font-weight: 700; text-transform: uppercase; letter-spacing: .18em; margin: 0; }
-        .doc-title-line { height: 1.5px; background: #000; margin: .5rem auto 1rem; width: 120px; }
-        .section-title { font-weight:700; margin-top:1.75rem; margin-bottom:.75rem; }
-        .table { border-collapse: collapse; }
+        .container { background:rgba(255,255,255,0.99); padding:1.5rem; margin:20px auto; border-radius:8px; max-width:950px; }
+        .doc-header { border-bottom: 0; padding-bottom: 0; margin-bottom: 0.8rem; page-break-after: avoid; }
+        .doc-header img { width: 100%; height: auto; display: block; border-bottom: 2px solid #000; }
+        .doc-title-main { font-size: 1.3rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; margin: 0.6rem 0; text-align: center; }
+        .doc-title-line { height: 2px; background: #000; margin: 0.5rem auto 0.8rem; width: 350px; }
+        .section-title { font-weight: 700; margin-top: 1.2rem; margin-bottom: 0.6rem; font-size: 0.95rem; page-break-after: avoid; }
+        .table { border-collapse: collapse; width: 100%; }
         .table-bordered > :not(caption) > * > * { border: 1px solid #333 !important; }
-        .table thead th, .table td { padding:.75rem; }
-        .table thead th { background: #f8f9fa; border-bottom: 2px solid #333 !important; }
-        .form-control, .form-check-input { border-radius:0; }
-        .section-title { font-weight:700; margin-top:1.75rem; margin-bottom:.75rem; }
-        .table-bordered td, .table-bordered th { border:1px solid #333 !important; }
-        .table thead th { border-bottom:2px solid #333; }
-        .table thead th, .table td { padding:.85rem; }
+        .table thead th, .table td { padding: 0.65rem; font-size: 0.9rem; }
+        .table thead th { background: #f5f5f5; border-bottom: 2px solid #333 !important; font-weight: 600; }
+        .form-control, .form-select, .form-check-input { border-radius: 0; border: 1px solid #999; font-size: 0.9rem; }
+        .table-bordered td, .table-bordered th { border: 1px solid #333 !important; }
         .table td { vertical-align: middle; }
-        .form-control, .form-check-input { border-radius:0; }
-        .signature-pad { width:100%; height:160px; border:1px solid #ccc; border-radius:.25rem; background:#fff; touch-action:none; }
-        .signature-actions { margin-top:.5rem; }
-        .signature-preview { max-width:100%; border:1px solid #ddd; margin-top:.5rem; display:none; }
+        .signature-pad { width: 100%; height: 120px; border: 1px solid #ccc; background: #fff; touch-action: none; }
+        .signature-actions { margin-top: 0.4rem; font-size: 0.85rem; }
+        .signature-preview { max-width: 100%; border: 1px solid #ddd; margin-top: 0.4rem; display: none; }
         .print-only { display: none; }
         .print-page-break { display: none; }
         .not-print { display: block; }
-        .subtext { font-size:.92rem; color:#555; }
-        .table-responsive, .table, .section-title, .doc-header { page-break-inside: avoid; }
-        @page { size: A4 portrait; margin: 2.54cm 2.7cm 2.54cm 3.17cm; }
+        .subtext { font-size: 0.85rem; color: #666; }
+        .notes-section { font-size: 0.9rem; line-height: 1.3; }
+        .action-buttons { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+        .table-responsive { overflow-x: auto; }
+        .mb-3 { margin-bottom: 0.75rem !important; }
+        .mb-4 { margin-bottom: 1rem !important; }
+        .mt-3 { margin-top: 0.75rem !important; }
+        .mt-4 { margin-top: 1rem !important; }
+        .pt-3 { padding-top: 0.75rem !important; }
+        .text-center { text-align: center; }
+        @page { size: A4 portrait; margin: 15mm 15mm 15mm 15mm; }
         @media print {
             .btn, .signature-actions, .alert, .not-print { display: none !important; }
-            body { background: white !important; font-family: Arial, sans-serif; }
-            .container { background: white !important; padding: 0; margin: 0; max-width: none; }
+            body { background: white !important; font-family: Arial, sans-serif; margin: 0; padding: 0; }
+            .container { background: white !important; padding: 0; margin: 0; max-width: none; border-radius: 0; }
             .signature-pad { display: none; }
             .signature-preview { display: block !important; }
-            .doc-header { page-break-after: avoid; }
+            .action-buttons { display: none; }
             .print-only { display: block !important; }
-            .print-page-break { display: block; page-break-before: always; }
+            .print-page-break { display: block !important; page-break-before: always; margin: 0; padding: 0; }
+            .doc-header { margin-bottom: 0.5rem; }
+            .doc-title-main { margin: 0.4rem 0; font-size: 1.1rem; }
+            .doc-title-line { margin: 0.4rem auto 0.5rem; width: 300px; }
+            .section-title { margin-top: 0.8rem; margin-bottom: 0.4rem; }
+            .table-responsive, .table, .section-title, .doc-header { page-break-inside: avoid; }
         }
     </style>
 </head>
 <body>
-<div class="container">
+<div class="container" id="printableArea">
     <div class="doc-header">
-        <img src="images/PEZA_Header.jpeg" alt="PEZA Header" style="width: 100%; height: auto; border-bottom: 2px solid #000;">
+        <img src="images/PEZA_Header.jpeg" alt="PEZA Header">
     </div>
-    <div class="text-center mb-4">
-        <p class="doc-title-main">Market Scoping Checklist</p>
+    <div class="text-center mb-3">
+        <p class="doc-title-main">MARKET SCOPING CHECKLIST</p>
         <div class="doc-title-line"></div>
     </div>
-    <div class="d-flex justify-content-end mb-4 not-print">
-        <a href="index.php" class="btn btn-sm btn-outline-secondary me-2">Directory</a>
+    <div class="action-buttons not-print">
+        <a href="index.php" class="btn btn-sm btn-outline-secondary">Directory</a>
         <a href="market_scoping.php" class="btn btn-sm btn-outline-primary">Market Scoping</a>
     </div>
 
@@ -272,8 +285,11 @@ $checklists = $pdo->query('SELECT * FROM market_scoping_checklist ORDER BY creat
         </div>
 
         <div class="print-page-break"></div>
-        <div class="doc-header print-only" style="margin-top: 0; padding-top: 0;">
-            <img src="images/PEZA_Header.jpeg" alt="PEZA Header" style="width: 100%; height: auto; border-bottom: 2px solid #000;">
+        <div class="doc-header print-only">
+            <img src="images/PEZA_Header.jpeg" alt="PEZA Header">
+        </div>
+        <div class="text-center print-only" style="margin-bottom: 0.8rem;">
+            <p class="doc-title-main" style="margin-bottom: 0.3rem;">MARKET SCOPING CHECKLIST</p>
         </div>
 
         <div class="table-responsive mb-4">
@@ -306,8 +322,11 @@ $checklists = $pdo->query('SELECT * FROM market_scoping_checklist ORDER BY creat
         </div>
 
         <div class="print-page-break"></div>
-        <div class="doc-header print-only" style="margin-top: 0; padding-top: 0;">
-            <img src="images/PEZA_Header.jpeg" alt="PEZA Header" style="width: 100%; height: auto; border-bottom: 2px solid #000;">
+        <div class="doc-header print-only">
+            <img src="images/PEZA_Header.jpeg" alt="PEZA Header">
+        </div>
+        <div class="text-center print-only" style="margin-bottom: 0.8rem;">
+            <p class="doc-title-main" style="margin-bottom: 0.3rem;">MARKET SCOPING CHECKLIST</p>
         </div>
         <div class="section-title">4. MARKET SCOPING RESULTS</div>
         <div class="table-responsive mb-4">
@@ -421,14 +440,72 @@ $checklists = $pdo->query('SELECT * FROM market_scoping_checklist ORDER BY creat
             </div>
         </div>
 
-        <button type="submit" class="btn btn-primary">Submit Checklist</button>
-        <?php if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_checklist'])): ?>
-        <div class="alert alert-success mt-3">Checklist submitted successfully!</div>
-        <button type="button" class="btn btn-secondary" onclick="window.print()">Print Checklist</button>
-        <?php endif; ?>
+        <div class="mt-4 pt-3 not-print">
+            <button type="submit" class="btn btn-primary">Submit Checklist</button>
+            <?php if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_checklist'])): ?>
+            <div class="alert alert-success mt-3">Checklist submitted successfully!</div>
+            <button type="button" class="btn btn-secondary" onclick="window.print()">Print Checklist</button>
+            <button type="button" class="btn btn-success" onclick="downloadPDF()">Download PDF</button>
+            <?php endif; ?>
+        </div>
     </form>
 </div>
 <script>
+    function downloadPDF() {
+        const element = document.getElementById('printableArea');
+        if (!element) {
+            alert('Error: Unable to find document area');
+            return;
+        }
+        
+        const btn = event.target;
+        btn.disabled = true;
+        btn.textContent = 'Generating PDF...';
+        
+        // Hide signature pads temporarily
+        const signaturePads = document.querySelectorAll('.signature-pad');
+        signaturePads.forEach(pad => pad.style.display = 'none');
+        
+        html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            logging: false,
+            backgroundColor: '#ffffff'
+        }).then(function(canvas) {
+            const { jsPDF } = window.jspdf;
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const imgWidth = 210; // A4 width in mm
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            let heightLeft = imgHeight;
+            let position = 0;
+            
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= 297; // A4 height in mm
+            
+            while (heightLeft >= 0) {
+                position = heightLeft - imgHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= 297;
+            }
+            
+            pdf.save('Market_Scoping_Checklist_' + new Date().getTime() + '.pdf');
+            
+            // Restore signature pads
+            signaturePads.forEach(pad => pad.style.display = 'block');
+            btn.disabled = false;
+            btn.textContent = 'Download PDF';
+        }).catch(function(error) {
+            console.error('PDF generation error:', error);
+            signaturePads.forEach(pad => pad.style.display = 'block');
+            btn.disabled = false;
+            btn.textContent = 'Download PDF';
+            alert('Error generating PDF: ' + error.message);
+        });
+    }
+
     function SignaturePad(canvas, hiddenInput) {
         const ctx = canvas.getContext('2d');
         let drawing = false;

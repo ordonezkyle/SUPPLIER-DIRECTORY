@@ -379,6 +379,12 @@ $scopings = $pdo->query($scopingsSql)->fetchAll();
         .supplier-suggestion-item{padding:8px 12px;cursor:pointer;border-bottom:1px solid #f0f0f0;}
         .supplier-suggestion-item:hover{background-color:#f3f3f3;}
         .supplier-suggestion-item.selected{background-color:#007bff;color:white;}
+        #detailsContent { width:100%; max-width:100%; }
+        #detailsContent .container-fluid { padding: 0; }
+        #detailsContent .row { margin-left: 0; margin-right: 0; }
+        #detailsContent .col-md-6 { flex: 0 0 50%; max-width: 50%; }
+        #detailsContent .table { width: 100%; }
+        #detailsContent .table-responsive { width: 100%; }
     </style>
 </head>
 <body>
@@ -577,12 +583,15 @@ $scopings = $pdo->query($scopingsSql)->fetchAll();
                 <div id="detailsContent"></div>
             </div>
             <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="printScopingDetails(event)">Print PDF</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 function formatCurrency(value) {
@@ -601,7 +610,8 @@ function formatDate(dateStr) {
 }
 
 function loadScopingDetails(record) {
-    let html = '<div class="row mb-3">';
+    let html = '<div class="container-fluid p-0">';
+    html += '<div class="row mb-3">';
     html += '<div class="col-md-6"><strong>Project:</strong> ' + (record.project_name || 'N/A') + '</div>';
     html += '<div class="col-md-6"><strong>Category:</strong> ' + (record.category || 'Other') + '</div>';
     html += '<div class="col-md-6"><strong>End User:</strong> ' + (record.end_user_unit || 'N/A') + '</div>';
@@ -703,7 +713,7 @@ function loadScopingDetails(record) {
     if (record.analysis) {
         html += '<div class="mt-3 p-3 bg-light border rounded"><strong>Analysis / Notes:</strong><br>' + record.analysis.replace(/\n/g, '<br>') + '</div>';
     }
-    
+    html += '</div>'; // close container-fluid wrapper
     document.getElementById('detailsContent').innerHTML = html;
 }
 
@@ -738,6 +748,69 @@ function loadScopingDetails(record) {
         });
     });
 })();
+
+function printScopingDetails(event) {
+    const element = document.getElementById('detailsContent');
+    if (!element) {
+        return alert('Unable to find Market Scoping Details content.');
+    }
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = 'Preparing PDF...';
+
+    const clone = element.cloneNode(true);
+    clone.style.position = 'absolute';
+    clone.style.left = '-9999px';
+    clone.style.top = '0';
+    clone.style.width = '900px';
+    clone.style.maxWidth = '900px';
+    clone.style.background = '#ffffff';
+    clone.style.padding = '24px';
+    document.body.appendChild(clone);
+
+    html2canvas(clone, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: clone.offsetWidth,
+        height: clone.offsetHeight
+    }).then(function(canvas) {
+        const { jsPDF } = window.jspdf;
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const imgWidth = pdfWidth;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+
+        while (heightLeft > -1) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pdfHeight;
+        }
+
+        pdf.save('Market_Scoping_Details_' + new Date().getTime() + '.pdf');
+        document.body.removeChild(clone);
+        btn.disabled = false;
+        btn.textContent = 'Print PDF';
+    }).catch(function(error) {
+        console.error('PDF generation error:', error);
+        if (clone && clone.parentNode) {
+            document.body.removeChild(clone);
+        }
+        btn.disabled = false;
+        btn.textContent = 'Print PDF';
+        alert('Error generating PDF: ' + (error.message || error));
+    });
+}
 
 // Supplier search with typeahead suggestions
 (function() {
