@@ -38,6 +38,8 @@ foreach ($newColumns as $definition) {
 
 $errors = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $isAutoSave = isset($_POST['auto_save']);
+    
     if (isset($_POST['save_checklist'])) {
         $stmt = $pdo->prepare('INSERT INTO market_scoping_checklist (scoping_id, consultation, conferences, technical_reports, publications, price_sourcing, philgeps, other_activity_checkbox, other_activity, documents, cost_estimate_considered, cost_estimate_recommendation, design_spec_considered, design_spec_recommendation) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
         $stmt->execute([
@@ -56,6 +58,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_POST['design_spec_considered'] ?? 'Not Applicable',
             $_POST['design_spec_recommendation'] ?: null,
         ]);
+        if (!$isAutoSave) {
+            header('Location: market_checklist.php');
+            exit;
+        }
     }
 }
 
@@ -68,7 +74,7 @@ $checklists = $pdo->query('SELECT msc.*, ms.project_name FROM market_scoping_che
 <div class="container">
     <p><a class="sidebar-link btn btn-sm btn-outline-secondary" href="index.php">Directory</a> <a class="sidebar-link" href="market_scoping.php">Back to Market Scoping</a> <a class="sidebar-link" href="pmis_dashboard.php">Dashboard</a></p>
 
-    <form method="post" class="row g-3 mb-3">
+    <form method="post" class="row g-3 mb-3" id="checklistForm">
         <input type="hidden" name="save_checklist" value="1">
         <div class="col-md-6">
             <label class="form-label">Related Market Scoping Record</label>
@@ -180,4 +186,65 @@ $checklists = $pdo->query('SELECT msc.*, ms.project_name FROM market_scoping_che
         </tbody>
     </table>
 </div>
+
+<script>
+let autoSaveTimer;
+let isAutoSaving = false;
+
+function autoSave() {
+    if (isAutoSaving) return;
+    isAutoSaving = true;
+    
+    const form = document.getElementById('checklistForm');
+    if (!form) return;
+    const formData = new FormData(form);
+    formData.append('auto_save', '1');
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.text())
+    .then(() => {
+        // Show saved indicator
+        showSaveIndicator();
+        isAutoSaving = false;
+    })
+    .catch(() => {
+        isAutoSaving = false;
+    });
+}
+
+function showSaveIndicator() {
+    let indicator = document.getElementById('autoSaveIndicator');
+    if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.id = 'autoSaveIndicator';
+        indicator.style.cssText = 'position:fixed;top:20px;right:20px;background:#28a745;color:white;padding:10px;border-radius:4px;z-index:1000;';
+        document.body.appendChild(indicator);
+    }
+    indicator.textContent = 'Auto-saved';
+    indicator.style.display = 'block';
+    setTimeout(() => {
+        indicator.style.display = 'none';
+    }, 2000);
+}
+
+function startAutoSave() {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(autoSave, 2000); // Save after 2 seconds of inactivity
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('checklistForm');
+    if (form) {
+        const inputs = form.querySelectorAll('input, textarea, select');
+        inputs.forEach(input => {
+            input.addEventListener('input', startAutoSave);
+            input.addEventListener('change', startAutoSave);
+        });
+    }
+});
+</script>
+
 </body></html>

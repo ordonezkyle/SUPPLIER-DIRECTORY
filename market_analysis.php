@@ -20,6 +20,8 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS market_scoping_checklist (
 ) ENGINE=InnoDB;");
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_checklist'])) {
+    $isAutoSave = isset($_POST['auto_save']);
+    
     $stmt = $pdo->prepare('INSERT INTO market_scoping_checklist (procurement_entity, end_user_unit, representative_name, project_name, estimated_budget, period_from, period_to, expected_delivery_date, consultation, conferences, technical_reports, publications) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     $stmt->execute([
         $_POST['procurement_entity'] ?: 'Philippine Economic Zone Authority',
@@ -35,6 +37,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_checklist'])) {
         isset($_POST['technical_reports']) ? 1 : 0,
         isset($_POST['publications']) ? 1 : 0,
     ]);
+    if (!$isAutoSave) {
+        // No redirect for this form
+    }
 }
 
 $checklists = $pdo->query('SELECT * FROM market_scoping_checklist ORDER BY created_at DESC')->fetchAll();
@@ -68,7 +73,7 @@ $checklists = $pdo->query('SELECT * FROM market_scoping_checklist ORDER BY creat
         </div>
     </div>
 
-    <form method="post">
+    <form method="post" id="analysisForm">
         <input type="hidden" name="save_checklist" value="1">
 
         <div class="section-title">1. Agency Information</div>
@@ -153,5 +158,66 @@ $checklists = $pdo->query('SELECT * FROM market_scoping_checklist ORDER BY creat
         <button type="submit" class="btn btn-primary">Submit Checklist</button>
     </form>
 </div>
+
+<script>
+let autoSaveTimer;
+let isAutoSaving = false;
+
+function autoSave() {
+    if (isAutoSaving) return;
+    isAutoSaving = true;
+    
+    const form = document.getElementById('analysisForm');
+    if (!form) return;
+    const formData = new FormData(form);
+    formData.append('auto_save', '1');
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.text())
+    .then(() => {
+        // Show saved indicator
+        showSaveIndicator();
+        isAutoSaving = false;
+    })
+    .catch(() => {
+        isAutoSaving = false;
+    });
+}
+
+function showSaveIndicator() {
+    let indicator = document.getElementById('autoSaveIndicator');
+    if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.id = 'autoSaveIndicator';
+        indicator.style.cssText = 'position:fixed;top:20px;right:20px;background:#28a745;color:white;padding:10px;border-radius:4px;z-index:1000;';
+        document.body.appendChild(indicator);
+    }
+    indicator.textContent = 'Auto-saved';
+    indicator.style.display = 'block';
+    setTimeout(() => {
+        indicator.style.display = 'none';
+    }, 2000);
+}
+
+function startAutoSave() {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(autoSave, 2000); // Save after 2 seconds of inactivity
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('analysisForm');
+    if (form) {
+        const inputs = form.querySelectorAll('input, textarea, select');
+        inputs.forEach(input => {
+            input.addEventListener('input', startAutoSave);
+            input.addEventListener('change', startAutoSave);
+        });
+    }
+});
+</script>
+
 </body>
 </html>

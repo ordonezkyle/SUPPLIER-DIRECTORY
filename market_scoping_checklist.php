@@ -85,6 +85,8 @@ foreach ($newColumns as $definition) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_checklist'])) {
+    $isAutoSave = isset($_POST['auto_save']);
+    
     $stmt = $pdo->prepare('INSERT INTO market_scoping_checklist (procurement_entity, end_user_unit, representative_name, project_name, estimated_budget, period_from, period_to, expected_delivery_date, consultation, conferences, technical_reports, publications, price_sourcing, philgeps, other_analogous_activity, other_analogous_activity_text, cost_estimate_considered, cost_estimate_recommendation, design_spec_considered, design_spec_recommendation, technical_criteria_considered, technical_criteria_recommendation, delivery_lead_time_considered, delivery_lead_time_recommendation, storage_warehousing_considered, storage_warehousing_recommendation, identified_risks_considered, identified_risks_recommendation, prepared_by_name, prepared_by_position, prepared_by_date, prepared_by_signature, approved_by_name, approved_by_position, approved_by_date, approved_by_signature) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     $stmt->execute([
         $_POST['procurement_entity'] ?: 'Philippine Economic Zone Authority',
@@ -126,6 +128,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_checklist'])) {
     ]);
     $lastInsertedId = $pdo->lastInsertId();
     $submittedChecklist = $pdo->query("SELECT * FROM market_scoping_checklist WHERE checklist_id = $lastInsertedId")->fetch();
+    if (!$isAutoSave) {
+        // Redirect or something, but since it's a checklist, maybe not
+    }
 }
 
 $checklists = $pdo->query('SELECT * FROM market_scoping_checklist ORDER BY created_at DESC')->fetchAll();
@@ -142,18 +147,35 @@ $checklists = $pdo->query('SELECT * FROM market_scoping_checklist ORDER BY creat
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background:url('images/PEZA-background.jpeg') no-repeat center center fixed; background-size:cover; }
         .container { background:rgba(255,255,255,0.99); padding:1.5rem; margin:20px auto; border-radius:8px; max-width:950px; }
-        .doc-header { border-bottom: 0; padding-bottom: 0; margin-bottom: 0.8rem; page-break-after: avoid; }
-        .doc-header img { width: 100%; height: auto; display: block; border-bottom: 2px solid #000; }
+        .doc-header { display: flex; align-items: center; gap: 12px; padding-bottom: 6px; margin-bottom: 1rem; page-break-after: auto; }
+        .doc-header img { width: 60px; height: auto; display: block; }
+        .header-text { line-height: 1.2; }
+        .header-text .small-text { font-size: 0.85rem; color: #555; }
+        .header-text .main-text { font-size: 1.1rem; font-weight: 700; color: #2f3e6e; }
         .doc-title-main { font-size: 1.3rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; margin: 0.6rem 0; text-align: center; }
         .doc-title-line { height: 2px; background: #000; margin: 0.5rem auto 0.8rem; width: 350px; }
         .section-title { font-weight: 700; margin-top: 1.2rem; margin-bottom: 0.6rem; font-size: 0.95rem; page-break-after: avoid; }
         .table { border-collapse: collapse; width: 100%; }
         .table-bordered > :not(caption) > * > * { border: 1px solid #333 !important; }
-        .table thead th, .table td { padding: 0.65rem; font-size: 0.9rem; }
+        .table thead th, .table td { padding: 0.3rem; font-size: 0.9rem; }
         .table thead th { background: #f5f5f5; border-bottom: 2px solid #333 !important; font-weight: 600; }
         .form-control, .form-select, .form-check-input { border-radius: 0; border: 1px solid #999; font-size: 0.9rem; }
+        .submitted .form-control, .submitted .form-select, .submitted .form-check-input { border: none !important; box-shadow: none !important; background: transparent !important; }
+        .submitted .table-bordered td, .submitted .table-bordered th { border: none !important; }
+        .submitted .table-bordered { border: 1px solid #333 !important; border-collapse: collapse; }
+        .submitted .table-bordered tr:first-child th, .submitted .table-bordered tr:first-child td { border-top: 1px solid #333 !important; }
+        .submitted .table-bordered tr:last-child th, .submitted .table-bordered tr:last-child td { border-bottom: 1px solid #333 !important; }
+        .submitted .table-bordered tr th:first-child, .submitted .table-bordered tr td:first-child { border-left: 1px solid #333 !important; }
+        .submitted .table-bordered tr th:last-child, .submitted .table-bordered tr td:last-child { border-right: 1px solid #333 !important; }
+        .submitted .table-bordered tr td:first-child, .submitted .table-bordered tr th:first-child { border-right: 1px solid #333 !important; }
+        .submitted .table-bordered tr td:last-child, .submitted .table-bordered tr th:last-child { border-left: 1px solid #333 !important; }
         .table-bordered td, .table-bordered th { border: 1px solid #333 !important; }
         .table td { vertical-align: middle; }
+        .date-range-row { margin: 0; }
+        .date-range-row .col-md-6 { padding-left: 0; padding-right: 0; }
+        .date-range-row .form-control { border: 1px solid #333; border-radius: 0; }
+        .date-range-row .col-md-6:first-child .form-control { border-right: none; }
+        .date-range-row .col-md-6:last-child .form-control { border-left: none; }
         .signature-pad { width: 100%; height: 120px; border: 1px solid #ccc; background: #fff; touch-action: none; }
         .signature-actions { margin-top: 0.4rem; font-size: 0.85rem; }
         .signature-preview { max-width: 100%; border: 1px solid #ddd; margin-top: 0.4rem; display: none; }
@@ -164,34 +186,43 @@ $checklists = $pdo->query('SELECT * FROM market_scoping_checklist ORDER BY creat
         .notes-section { font-size: 0.9rem; line-height: 1.3; }
         .action-buttons { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
         .table-responsive { overflow-x: auto; }
-        .mb-3 { margin-bottom: 0.75rem !important; }
-        .mb-4 { margin-bottom: 1rem !important; }
-        .mt-3 { margin-top: 0.75rem !important; }
-        .mt-4 { margin-top: 1rem !important; }
-        .pt-3 { padding-top: 0.75rem !important; }
         .text-center { text-align: center; }
-        @page { size: A4 portrait; margin: 15mm 15mm 15mm 15mm; }
+        @page { size: A4 portrait; margin: 5mm 5mm 5mm 5mm; }
         @media print {
             .btn, .signature-actions, .alert, .not-print { display: none !important; }
-            body { background: white !important; font-family: Arial, sans-serif; margin: 0; padding: 0; }
+            body { background: white !important; font-family: Arial, sans-serif; margin: 0; padding: 0; margin-top: 90px; }
             .container { background: white !important; padding: 0; margin: 0; max-width: none; border-radius: 0; }
             .signature-pad { display: none; }
             .signature-preview { display: block !important; }
             .action-buttons { display: none; }
             .print-only { display: block !important; }
-            .print-page-break { display: block !important; page-break-before: always; margin: 0; padding: 0; }
+            .print-page-break { display: block !important; page-break-before: auto; margin: 0; padding: 0; }
+            .fixed-header {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 80px;
+                background: white;
+                z-index: 1000;
+            }
             .doc-header { margin-bottom: 0.5rem; }
-            .doc-title-main { margin: 0.4rem 0; font-size: 1.1rem; }
-            .doc-title-line { margin: 0.4rem auto 0.5rem; width: 300px; }
-            .section-title { margin-top: 0.8rem; margin-bottom: 0.4rem; }
-            .table-responsive, .table, .section-title, .doc-header { page-break-inside: avoid; }
+            .doc-title-main { margin: 0.1rem 0; font-size: 0.85rem; }
+            .doc-title-line { margin: 0.1rem auto 0.5rem; width: 100px; }
+            .section-title { margin-top: 0.8rem; margin-bottom: 0.1rem; }
+            .table thead th, .table td { padding: 0.05rem 0.15rem; font-size: 0.85rem; }
+            .table-responsive, .table, .section-title, .doc-header { page-break-inside: auto; }
         }
     </style>
 </head>
 <body>
-<div class="container" id="printableArea">
-    <div class="doc-header">
-        <img src="images/PEZA_Header.jpeg" alt="PEZA Header">
+<div class="container <?= isset($submittedChecklist) ? 'submitted' : '' ?>" id="printableArea">
+    <div class="doc-header fixed-header">
+        <img src="images/LOGO.jpg" alt="PEZA Logo">
+        <div class="header-text">
+            <div class="small-text">Republic of the Philippines</div>
+            <div class="main-text">PHILIPPINE ECONOMIC ZONE AUTHORITY</div>
+        </div>
     </div>
     <div class="text-center mb-3">
         <p class="doc-title-main">MARKET SCOPING CHECKLIST</p>
@@ -202,7 +233,7 @@ $checklists = $pdo->query('SELECT * FROM market_scoping_checklist ORDER BY creat
         <a href="market_scoping.php" class="btn btn-sm btn-outline-primary">Market Scoping</a>
     </div>
 
-    <form method="post">
+    <form method="post" id="scopingChecklistForm" onsubmit="cleanInnerBorders()">
         <input type="hidden" name="save_checklist" value="1">
 
         <div class="section-title">1. Agency Information</div>
@@ -240,7 +271,7 @@ $checklists = $pdo->query('SELECT * FROM market_scoping_checklist ORDER BY creat
                     <tr>
                         <td><strong>Period of Market Scoping</strong><br><span class="subtext">[From (mm/yyyy) To (mm/yyyy)]</span></td>
                         <td>
-                            <div class="row g-2">
+                            <div class="row g-2 date-range-row">
                                 <div class="col-md-6"><input type="month" name="period_from" class="form-control" value="<?=htmlspecialchars($_POST['period_from'] ?? '')?>"></div>
                                 <div class="col-md-6"><input type="month" name="period_to" class="form-control" value="<?=htmlspecialchars($_POST['period_to'] ?? '')?>"></div>
                             </div>
@@ -284,14 +315,6 @@ $checklists = $pdo->query('SELECT * FROM market_scoping_checklist ORDER BY creat
             </table>
         </div>
 
-        <div class="print-page-break"></div>
-        <div class="doc-header print-only">
-            <img src="images/PEZA_Header.jpeg" alt="PEZA Header">
-        </div>
-        <div class="text-center print-only" style="margin-bottom: 0.8rem;">
-            <p class="doc-title-main" style="margin-bottom: 0.3rem;">MARKET SCOPING CHECKLIST</p>
-        </div>
-
         <div class="table-responsive mb-4">
             <table class="table table-bordered mb-0">
                 <thead class="table-light"><tr><th style="width:8%;">Check (✓)</th><th style="width:35%;">Activity/ies Conducted</th><th>Documentation (as may be applicable)</th></tr></thead>
@@ -322,12 +345,6 @@ $checklists = $pdo->query('SELECT * FROM market_scoping_checklist ORDER BY creat
         </div>
 
         <div class="print-page-break"></div>
-        <div class="doc-header print-only">
-            <img src="images/PEZA_Header.jpeg" alt="PEZA Header">
-        </div>
-        <div class="text-center print-only" style="margin-bottom: 0.8rem;">
-            <p class="doc-title-main" style="margin-bottom: 0.3rem;">MARKET SCOPING CHECKLIST</p>
-        </div>
         <div class="section-title">4. MARKET SCOPING RESULTS</div>
         <div class="table-responsive mb-4">
             <table class="table table-bordered mb-0">
@@ -625,6 +642,72 @@ $checklists = $pdo->query('SELECT * FROM market_scoping_checklist ORDER BY creat
     }
 
     document.addEventListener('DOMContentLoaded', initSignaturePads);
+
+    function cleanInnerBorders() {
+        const printableArea = document.getElementById('printableArea');
+        if (printableArea) {
+            printableArea.classList.add('submitted');
+        }
+    }
+
+let autoSaveTimer;
+let isAutoSaving = false;
+
+function autoSave() {
+    if (isAutoSaving) return;
+    isAutoSaving = true;
+    
+    const form = document.getElementById('scopingChecklistForm');
+    if (!form) return;
+    const formData = new FormData(form);
+    formData.append('auto_save', '1');
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.text())
+    .then(() => {
+        // Show saved indicator
+        showSaveIndicator();
+        isAutoSaving = false;
+    })
+    .catch(() => {
+        isAutoSaving = false;
+    });
+}
+
+function showSaveIndicator() {
+    let indicator = document.getElementById('autoSaveIndicator');
+    if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.id = 'autoSaveIndicator';
+        indicator.style.cssText = 'position:fixed;top:20px;right:20px;background:#28a745;color:white;padding:10px;border-radius:4px;z-index:1000;';
+        document.body.appendChild(indicator);
+    }
+    indicator.textContent = 'Auto-saved';
+    indicator.style.display = 'block';
+    setTimeout(() => {
+        indicator.style.display = 'none';
+    }, 2000);
+}
+
+function startAutoSave() {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(autoSave, 2000); // Save after 2 seconds of inactivity
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('scopingChecklistForm');
+    if (form) {
+        const inputs = form.querySelectorAll('input, textarea, select');
+        inputs.forEach(input => {
+            input.addEventListener('input', startAutoSave);
+            input.addEventListener('change', startAutoSave);
+        });
+    }
+});
 </script>
+
 </body>
 </html>

@@ -31,6 +31,8 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS market_scoping (
     representative_name VARCHAR(255) DEFAULT NULL,
     designation VARCHAR(255) DEFAULT NULL,
     project_name VARCHAR(255) NOT NULL,
+    item_quantity INT DEFAULT 1,
+    item_unit VARCHAR(50) DEFAULT 'unit',
     category VARCHAR(50) DEFAULT 'Other',
     estimated_budget DECIMAL(14,2) DEFAULT NULL,
     period_from_month TINYINT DEFAULT NULL,
@@ -50,6 +52,18 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS market_scoping (
     quotation_3 DECIMAL(13,2) DEFAULT NULL,
     supplier_id_4 INT DEFAULT NULL,
     quotation_4 DECIMAL(13,2) DEFAULT NULL,
+    supplier_id_5 INT DEFAULT NULL,
+    quotation_5 DECIMAL(13,2) DEFAULT NULL,
+    supplier_qty_1 INT DEFAULT NULL,
+    supplier_qty_2 INT DEFAULT NULL,
+    supplier_qty_3 INT DEFAULT NULL,
+    supplier_qty_4 INT DEFAULT NULL,
+    supplier_qty_5 INT DEFAULT NULL,
+    supplier_name_1 VARCHAR(255) DEFAULT NULL,
+    supplier_name_2 VARCHAR(255) DEFAULT NULL,
+    supplier_name_3 VARCHAR(255) DEFAULT NULL,
+    supplier_name_4 VARCHAR(255) DEFAULT NULL,
+    supplier_name_5 VARCHAR(255) DEFAULT NULL,
     lowest_price DECIMAL(13,2) DEFAULT NULL,
     average_price DECIMAL(13,2) DEFAULT NULL,
     status VARCHAR(50) DEFAULT 'Pending',
@@ -60,7 +74,8 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS market_scoping (
     FOREIGN KEY (supplier_id_1) REFERENCES companies(company_id) ON DELETE SET NULL,
     FOREIGN KEY (supplier_id_2) REFERENCES companies(company_id) ON DELETE SET NULL,
     FOREIGN KEY (supplier_id_3) REFERENCES companies(company_id) ON DELETE SET NULL,
-    FOREIGN KEY (supplier_id_4) REFERENCES companies(company_id) ON DELETE SET NULL
+    FOREIGN KEY (supplier_id_4) REFERENCES companies(company_id) ON DELETE SET NULL,
+    FOREIGN KEY (supplier_id_5) REFERENCES companies(company_id) ON DELETE SET NULL
 ) ENGINE=InnoDB;");
 
 if (!columnExists($pdo, 'market_scoping', 'category')) {
@@ -77,6 +92,12 @@ if (!columnExists($pdo, 'market_scoping', 'period_from_date')) {
 }
 if (!columnExists($pdo, 'market_scoping', 'period_to_date')) {
     $pdo->exec("ALTER TABLE market_scoping ADD COLUMN period_to_date DATE DEFAULT NULL");
+}
+if (!columnExists($pdo, 'market_scoping', 'item_quantity')) {
+    $pdo->exec("ALTER TABLE market_scoping ADD COLUMN item_quantity INT DEFAULT 1");
+}
+if (!columnExists($pdo, 'market_scoping', 'item_unit')) {
+    $pdo->exec("ALTER TABLE market_scoping ADD COLUMN item_unit VARCHAR(50) DEFAULT 'unit'");
 }
 if (!columnExists($pdo, 'market_scoping', 'supplier_id_1')) {
     $pdo->exec("ALTER TABLE market_scoping ADD COLUMN supplier_id_1 INT DEFAULT NULL");
@@ -101,6 +122,30 @@ if (!columnExists($pdo, 'market_scoping', 'supplier_id_4')) {
 }
 if (!columnExists($pdo, 'market_scoping', 'quotation_4')) {
     $pdo->exec("ALTER TABLE market_scoping ADD COLUMN quotation_4 DECIMAL(13,2) DEFAULT NULL");
+}
+if (!columnExists($pdo, 'market_scoping', 'supplier_id_5')) {
+    $pdo->exec("ALTER TABLE market_scoping ADD COLUMN supplier_id_5 INT DEFAULT NULL");
+}
+if (!columnExists($pdo, 'market_scoping', 'quotation_5')) {
+    $pdo->exec("ALTER TABLE market_scoping ADD COLUMN quotation_5 DECIMAL(13,2) DEFAULT NULL");
+}
+if (!columnExists($pdo, 'market_scoping', 'supplier_name_5')) {
+    $pdo->exec("ALTER TABLE market_scoping ADD COLUMN supplier_name_5 VARCHAR(255) DEFAULT NULL");
+}
+if (!columnExists($pdo, 'market_scoping', 'supplier_qty_1')) {
+    $pdo->exec("ALTER TABLE market_scoping ADD COLUMN supplier_qty_1 INT DEFAULT NULL");
+}
+if (!columnExists($pdo, 'market_scoping', 'supplier_qty_2')) {
+    $pdo->exec("ALTER TABLE market_scoping ADD COLUMN supplier_qty_2 INT DEFAULT NULL");
+}
+if (!columnExists($pdo, 'market_scoping', 'supplier_qty_3')) {
+    $pdo->exec("ALTER TABLE market_scoping ADD COLUMN supplier_qty_3 INT DEFAULT NULL");
+}
+if (!columnExists($pdo, 'market_scoping', 'supplier_qty_4')) {
+    $pdo->exec("ALTER TABLE market_scoping ADD COLUMN supplier_qty_4 INT DEFAULT NULL");
+}
+if (!columnExists($pdo, 'market_scoping', 'supplier_qty_5')) {
+    $pdo->exec("ALTER TABLE market_scoping ADD COLUMN supplier_qty_5 INT DEFAULT NULL");
 }
 if (!columnExists($pdo, 'market_scoping', 'lowest_price')) {
     $pdo->exec("ALTER TABLE market_scoping ADD COLUMN lowest_price DECIMAL(13,2) DEFAULT NULL");
@@ -148,6 +193,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $period_to_date = !empty($_POST['period_to_date']) ? $_POST['period_to_date'] : null;
             $expected_delivery_date = !empty($_POST['expected_delivery_date']) ? $_POST['expected_delivery_date'] : null;
 
+            $item_quantity = isset($_POST['item_quantity']) && preg_match('/^[0-9]+$/', $_POST['item_quantity']) ? max(1, (int)$_POST['item_quantity']) : null;
+            if ($item_quantity === null) {
+                $errors[] = 'Item quantity is required and must be a whole number.';
+            }
+            $item_unit = trim($_POST['item_unit'] ?? '');
+            if ($item_unit === '') {
+                $errors[] = 'Item unit is required.';
+            }
+
             $period_from_month = $period_from_date ? (int)date('n', strtotime($period_from_date)) : ($_POST['period_from_month'] ?: null);
             $period_from_year = $period_from_date ? (int)date('Y', strtotime($period_from_date)) : ($_POST['period_from_year'] ?: null);
             $period_to_month = $period_to_date ? (int)date('n', strtotime($period_to_date)) : ($_POST['period_to_month'] ?: null);
@@ -158,13 +212,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $supplierIds = [];
             $supplierQuotes = [];
             $supplierNames = [];
+            $supplierQtys = [];
             
-            for ($i = 1; $i <= 4; $i++) {
+            for ($i = 1; $i <= 5; $i++) {
                 $supplierNameKey = 'supplier_name_' . $i;
                 $quotationKey = 'quotation_' . $i;
+                $quantityKey = 'supplier_qty_' . $i;
                 
                 $supplierName = isset($_POST[$supplierNameKey]) ? trim($_POST[$supplierNameKey]) : '';
                 $quoteValue = normalizeCurrency($_POST[$quotationKey] ?? null);
+                $qtyValue = isset($_POST[$quantityKey]) ? intval($_POST[$quantityKey]) : null;
+                if ($qtyValue !== null && $qtyValue <= 0) {
+                    $qtyValue = null;
+                }
                 
                 // Try to find supplier ID from company name
                 $supplierValue = null;
@@ -181,11 +241,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($quoteValue !== null && empty($supplierName)) {
                     $errors[] = "Supplier #$i name is required when a quotation is provided.";
                 }
+                if (!empty($supplierName) && $quoteValue !== null && $qtyValue === null) {
+                    $errors[] = "Quantity for Supplier #$i is required when a quotation is provided.";
+                }
                 
-                if (!empty($supplierName) && $quoteValue !== null) {
+                if (!empty($supplierName) && $quoteValue !== null && $qtyValue !== null) {
                     $supplierIds[$i] = $supplierValue;  // supplier_id or null if not in database
                     $supplierQuotes[$i] = $quoteValue;
                     $supplierNames[$i] = $supplierName;
+                    $supplierQtys[$i] = $qtyValue;
                 }
             }
 
@@ -208,20 +272,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $estimated_budget = normalizeCurrency($_POST['estimated_budget'] ?? null);
                 $supplierValues = [];
-                for ($i = 1; $i <= 4; $i++) {
+                for ($i = 1; $i <= 5; $i++) {
                     $supplierValues[] = isset($supplierIds[$i]) ? $supplierIds[$i] : null;
                     $supplierValues[] = isset($supplierQuotes[$i]) ? $supplierQuotes[$i] : null;
                     $supplierValues[] = isset($supplierNames[$i]) ? $supplierNames[$i] : null;
+                    $supplierValues[] = isset($supplierQtys[$i]) ? $supplierQtys[$i] : null;
                 }
 
                 if (!empty($_POST['scoping_id']) && isset($_POST['update_scoping'])) {
-                    $stmt = $pdo->prepare('UPDATE market_scoping SET procuring_entity=?, end_user_unit=?, representative_name=?, designation=?, project_name=?, category=?, estimated_budget=?, period_from_month=?, period_from_year=?, period_to_month=?, period_to_year=?, expected_delivery_month=?, expected_delivery_year=?, period_from_date=?, period_to_date=?, expected_delivery_date=?, supplier_id=?, quotation=?, supplier_id_1=?, quotation_1=?, supplier_name_1=?, supplier_id_2=?, quotation_2=?, supplier_name_2=?, supplier_id_3=?, quotation_3=?, supplier_name_3=?, supplier_id_4=?, quotation_4=?, supplier_name_4=?, lowest_price=?, average_price=?, status=?, analysis=?, report_link=? WHERE scoping_id=?');
+                    $stmt = $pdo->prepare('UPDATE market_scoping SET procuring_entity=?, end_user_unit=?, representative_name=?, designation=?, project_name=?, item_quantity=?, item_unit=?, category=?, estimated_budget=?, period_from_month=?, period_from_year=?, period_to_month=?, period_to_year=?, expected_delivery_month=?, expected_delivery_year=?, period_from_date=?, period_to_date=?, expected_delivery_date=?, supplier_id=?, quotation=?, supplier_id_1=?, quotation_1=?, supplier_name_1=?, supplier_qty_1=?, supplier_id_2=?, quotation_2=?, supplier_name_2=?, supplier_qty_2=?, supplier_id_3=?, quotation_3=?, supplier_name_3=?, supplier_qty_3=?, supplier_id_4=?, quotation_4=?, supplier_name_4=?, supplier_qty_4=?, supplier_id_5=?, quotation_5=?, supplier_name_5=?, supplier_qty_5=?, lowest_price=?, average_price=?, status=?, analysis=?, report_link=? WHERE scoping_id=?');
                     $stmt->execute(array_merge([
                         $_POST['procuring_entity'] ?: 'Philippine Economic Zone Authority',
                         $_POST['end_user_unit'] ?: null,
                         $_POST['representative_name'] ?: null,
                         $_POST['designation'] ?: null,
                         $_POST['project_name'],
+                        $item_quantity,
+                        $item_unit,
                         $category,
                         $estimated_budget,
                         $period_from_month,
@@ -244,13 +311,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $_POST['scoping_id'],
                     ]));
                 } else {
-                    $stmt = $pdo->prepare('INSERT INTO market_scoping (procuring_entity, end_user_unit, representative_name, designation, project_name, category, estimated_budget, period_from_month, period_from_year, period_to_month, period_to_year, expected_delivery_month, expected_delivery_year, period_from_date, period_to_date, expected_delivery_date, supplier_id, quotation, supplier_id_1, quotation_1, supplier_name_1, supplier_id_2, quotation_2, supplier_name_2, supplier_id_3, quotation_3, supplier_name_3, supplier_id_4, quotation_4, supplier_name_4, lowest_price, average_price, status, analysis, report_link) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+                    $placeholders = implode(', ', array_fill(0, 45, '?'));
+                    $stmt = $pdo->prepare('INSERT INTO market_scoping (procuring_entity, end_user_unit, representative_name, designation, project_name, item_quantity, item_unit, category, estimated_budget, period_from_month, period_from_year, period_to_month, period_to_year, expected_delivery_month, expected_delivery_year, period_from_date, period_to_date, expected_delivery_date, supplier_id, quotation, supplier_id_1, quotation_1, supplier_name_1, supplier_qty_1, supplier_id_2, quotation_2, supplier_name_2, supplier_qty_2, supplier_id_3, quotation_3, supplier_name_3, supplier_qty_3, supplier_id_4, quotation_4, supplier_name_4, supplier_qty_4, supplier_id_5, quotation_5, supplier_name_5, supplier_qty_5, lowest_price, average_price, status, analysis, report_link) VALUES (' . $placeholders . ')');
                     $stmt->execute(array_merge([
                         $_POST['procuring_entity'] ?: 'Philippine Economic Zone Authority',
                         $_POST['end_user_unit'] ?: null,
                         $_POST['representative_name'] ?: null,
                         $_POST['designation'] ?: null,
                         $_POST['project_name'],
+                        $item_quantity,
+                        $item_unit,
                         $category,
                         $estimated_budget,
                         $period_from_month,
@@ -294,20 +364,20 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
             $editScoping['supplier_id_1'] = $editScoping['supplier_id'];
             $editScoping['quotation_1'] = $editScoping['quotation'];
         }
-        for ($i = 1; $i <= 4; $i++) {
-            $supplierNameKey = 'supplier_name_' . $i;
-            $supplierIdKey = 'supplier_id_' . $i;
-            if (empty($editScoping[$supplierNameKey]) && !empty($editScoping[$supplierIdKey])) {
-                $stmt = $pdo->prepare('SELECT company_name FROM companies WHERE company_id = ?');
-                $stmt->execute([$editScoping[$supplierIdKey]]);
-                $company = $stmt->fetch();
-                if ($company) {
-                    $editScoping[$supplierNameKey] = $company['company_name'];
+            for ($i = 1; $i <= 5; $i++) {
+                $supplierNameKey = 'supplier_name_' . $i;
+                $supplierIdKey = 'supplier_id_' . $i;
+                if (empty($editScoping[$supplierNameKey]) && !empty($editScoping[$supplierIdKey])) {
+                    $stmt = $pdo->prepare('SELECT company_name FROM companies WHERE company_id = ?');
+                    $stmt->execute([$editScoping[$supplierIdKey]]);
+                    $company = $stmt->fetch();
+                    if ($company) {
+                        $editScoping[$supplierNameKey] = $company['company_name'];
+                    }
                 }
             }
         }
     }
-}
 
 $companies = $pdo->query('SELECT company_id, company_name FROM companies ORDER BY company_name')->fetchAll();
 
@@ -318,6 +388,8 @@ $scopingColumns = [
     'm.representative_name',
     'm.designation',
     'm.project_name',
+    'm.item_quantity',
+    'm.item_unit',
     'm.category',
     'm.estimated_budget',
     'm.period_from_month',
@@ -329,16 +401,24 @@ $scopingColumns = [
     'm.quotation',
     'm.supplier_id_1',
     'm.quotation_1',
+    'm.supplier_qty_1',
     'm.supplier_id_2',
     'm.quotation_2',
+    'm.supplier_qty_2',
     'm.supplier_id_3',
     'm.quotation_3',
+    'm.supplier_qty_3',
     'm.supplier_id_4',
     'm.quotation_4',
+    'm.supplier_qty_4',
+    'm.supplier_id_5',
+    'm.quotation_5',
+    'm.supplier_qty_5',
     'm.supplier_name_1',
     'm.supplier_name_2',
     'm.supplier_name_3',
     'm.supplier_name_4',
+    'm.supplier_name_5',
     'm.lowest_price',
     'm.average_price',
     'm.analysis',
@@ -349,6 +429,7 @@ $scopingColumns = [
     'COALESCE(m.supplier_name_2, c2.company_name) AS supplier_2_name',
     'COALESCE(m.supplier_name_3, c3.company_name) AS supplier_3_name',
     'COALESCE(m.supplier_name_4, c4.company_name) AS supplier_4_name',
+    'COALESCE(m.supplier_name_5, c5.company_name) AS supplier_5_name',
 ];
 
 if (columnExists($pdo, 'market_scoping', 'period_from_date')) {
@@ -361,7 +442,7 @@ if (columnExists($pdo, 'market_scoping', 'expected_delivery_date')) {
     $scopingColumns[] = 'm.expected_delivery_date';
 }
 
-$scopingsSql = 'SELECT ' . implode(',', $scopingColumns) . "\n    FROM market_scoping m\n    LEFT JOIN companies c ON c.company_id=m.supplier_id\n    LEFT JOIN companies c1 ON c1.company_id=m.supplier_id_1\n    LEFT JOIN companies c2 ON c2.company_id=m.supplier_id_2\n    LEFT JOIN companies c3 ON c3.company_id=m.supplier_id_3\n    LEFT JOIN companies c4 ON c4.company_id=m.supplier_id_4\n    ORDER BY m.created_at DESC";
+$scopingsSql = 'SELECT ' . implode(',', $scopingColumns) . "\n    FROM market_scoping m\n    LEFT JOIN companies c ON c.company_id=m.supplier_id\n    LEFT JOIN companies c1 ON c1.company_id=m.supplier_id_1\n    LEFT JOIN companies c2 ON c2.company_id=m.supplier_id_2\n    LEFT JOIN companies c3 ON c3.company_id=m.supplier_id_3\n    LEFT JOIN companies c4 ON c4.company_id=m.supplier_id_4\n    LEFT JOIN companies c5 ON c5.company_id=m.supplier_id_5\n    ORDER BY m.created_at DESC";
 $scopings = $pdo->query($scopingsSql)->fetchAll();
 ?>
 <!DOCTYPE html>
@@ -385,6 +466,28 @@ $scopings = $pdo->query($scopingsSql)->fetchAll();
         #detailsContent .col-md-6 { flex: 0 0 50%; max-width: 50%; }
         #detailsContent .table { width: 100%; }
         #detailsContent .table-responsive { width: 100%; }
+        .report-header { margin-bottom: 0.5rem; display: flex; align-items: flex-start; gap: 1rem; }
+        .report-brand { display: flex; align-items: flex-start; gap: 0.9rem; }
+        .report-logo { max-width: 80px; max-height: 80px; object-fit: contain; }
+        .report-brand-text { text-align: left; line-height: 1.2; margin-top: 0.6rem; }
+        .report-subheader { font-size: 0.88rem; letter-spacing: 0.04em; line-height: 1.3; margin: 0; }
+        .report-title { font-size: 1.18rem; font-weight: 700; margin-top: 0.2rem; margin-bottom: 0.75rem; text-align: center; width: 100%; letter-spacing: 0.04em; }
+        @page { size: A4 landscape; margin: 1.3cm 0cm 1.3cm 0.9cm; }
+        .modal-dialog.modal-lg { max-width: 1300px; }
+        .report-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 0.78rem; }
+        .report-table th, .report-table td { vertical-align: middle; text-align: center; padding: 0.32rem 0.35rem; border: 1px solid #000; word-break: break-word; }
+        .report-table td { line-height: 1.1; }
+        .report-table td.text-start { text-align: left; white-space: normal; }
+        .report-table th { font-size: 0.82rem; font-weight: 700; }
+        .report-table .supplier-header { font-weight: 700; font-size: 0.79rem; }
+        .report-table .suppliers-top-row th { background: #f8f8f8; font-weight: 700; font-size: 0.86rem; }
+        .suppliers-table th { font-size: 0.95rem; font-weight: 700; background: #f5f5f5; }
+        .report-summary { margin-top: 1.2rem; }
+        .report-summary .col-md-6 { margin-bottom: 0.35rem; }
+        .report-footer { margin-top: 1.75rem; }
+        .report-footer .signature-block { width: 48%; display: inline-block; vertical-align: top; text-align: center; }
+        .report-footer .signature-name { font-weight: 700; margin-top: 0.8rem; font-size: 0.95rem; }
+        .report-footer .signature-role { font-size: 0.92rem; color: #555; }
     </style>
 </head>
 <body>
@@ -438,7 +541,7 @@ $scopings = $pdo->query($scopingsSql)->fetchAll();
             <label class="form-label">Project Name</label>
             <input type="text" name="project_name" class="form-control" required value="<?= htmlspecialchars($editScoping['project_name'] ?? '') ?>">
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <label class="form-label">Category</label>
             <select name="category" class="form-select" required>
                 <option value="" disabled<?= !isset($editScoping['category']) ? ' selected' : '' ?>>Select category</option>
@@ -448,6 +551,14 @@ $scopings = $pdo->query($scopingsSql)->fetchAll();
                 <option value="Maintenance"<?= (isset($editScoping['category']) && $editScoping['category'] == 'Maintenance') ? ' selected' : '' ?>>Maintenance</option>
                 <option value="Other"<?= (isset($editScoping['category']) && $editScoping['category'] == 'Other') ? ' selected' : '' ?>>Other</option>
             </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Quantity</label>
+            <input type="number" min="1" name="item_quantity" class="form-control" value="<?= htmlspecialchars($editScoping['item_quantity'] ?? '1') ?>" required>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Unit</label>
+            <input type="text" name="item_unit" class="form-control" value="<?= htmlspecialchars($editScoping['item_unit'] ?? 'unit') ?>" required>
         </div>
         <div class="col-md-4">
             <label class="form-label">Estimated Budget (PHP)</label>
@@ -467,7 +578,7 @@ $scopings = $pdo->query($scopingsSql)->fetchAll();
         </div>
 
         <div class="col-12"><hr></div>
-        <div class="col-12"><small class="text-muted">Enter at least 2 suppliers with quotations for comparative analysis; up to 4 suppliers are allowed.</small></div>
+        <div class="col-12"><small class="text-muted">Enter at least 2 suppliers with quotations for comparative analysis; up to 5 suppliers are allowed.</small></div>
         <div class="col-md-3">
             <label class="form-label">Supplier 1</label>
             <div class="supplier-search-wrapper">
@@ -475,6 +586,7 @@ $scopings = $pdo->query($scopingsSql)->fetchAll();
                 <input type="hidden" name="supplier_id_1" value="<?= htmlspecialchars($editScoping['supplier_id_1'] ?? '') ?>">
                 <div class="supplier-suggestions"></div>
             </div>
+
         </div>
         <div class="col-md-3">
             <label class="form-label">Quotation 1 (PHP)</label>
@@ -487,6 +599,7 @@ $scopings = $pdo->query($scopingsSql)->fetchAll();
                 <input type="hidden" name="supplier_id_2" value="<?= htmlspecialchars($editScoping['supplier_id_2'] ?? '') ?>">
                 <div class="supplier-suggestions"></div>
             </div>
+
         </div>
         <div class="col-md-3">
             <label class="form-label">Quotation 2 (PHP)</label>
@@ -499,6 +612,7 @@ $scopings = $pdo->query($scopingsSql)->fetchAll();
                 <input type="hidden" name="supplier_id_3" value="<?= htmlspecialchars($editScoping['supplier_id_3'] ?? '') ?>">
                 <div class="supplier-suggestions"></div>
             </div>
+
         </div>
         <div class="col-md-3">
             <label class="form-label">Quotation 3 (PHP)</label>
@@ -511,10 +625,24 @@ $scopings = $pdo->query($scopingsSql)->fetchAll();
                 <input type="hidden" name="supplier_id_4" value="<?= htmlspecialchars($editScoping['supplier_id_4'] ?? '') ?>">
                 <div class="supplier-suggestions"></div>
             </div>
+
         </div>
         <div class="col-md-3">
             <label class="form-label">Quotation 4 (PHP)</label>
             <input type="text" name="quotation_4" inputmode="decimal" pattern="^\s*(?:₱|PHP)?\s*[0-9,]+(?:\.[0-9]{2})?\s*$" placeholder="0,000,000.00" class="form-control formatted-money" value="<?= htmlspecialchars($editScoping['quotation_4'] ?? '') ?>">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Supplier 5 (optional)</label>
+            <div class="supplier-search-wrapper">
+                <input type="text" name="supplier_name_5" class="form-control supplier-search" placeholder="Type supplier name..." autocomplete="off" value="<?= htmlspecialchars($editScoping['supplier_name_5'] ?? '') ?>">
+                <input type="hidden" name="supplier_id_5" value="<?= htmlspecialchars($editScoping['supplier_id_5'] ?? '') ?>">
+                <div class="supplier-suggestions"></div>
+            </div>
+
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Quotation 5 (PHP)</label>
+            <input type="text" name="quotation_5" inputmode="decimal" pattern="^\s*(?:₱|PHP)?\s*[0-9,]+(?:\.[0-9]{2})?\s*$" placeholder="0,000,000.00" class="form-control formatted-money" value="<?= htmlspecialchars($editScoping['quotation_5'] ?? '') ?>">
         </div>
         <div class="col-md-4">
             <label class="form-label">Status</label>
@@ -556,7 +684,8 @@ $scopings = $pdo->query($scopingsSql)->fetchAll();
                   <td><?= htmlspecialchars($m['status'] ?? 'Pending') ?></td>
                   <td>
                       <a href="market_scoping.php?edit=<?= intval($m['scoping_id']) ?>" class="btn btn-sm btn-warning me-1">Edit</a>
-                      <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#detailsModal" onclick="loadScopingDetails(<?= htmlspecialchars(json_encode($m), ENT_QUOTES, 'UTF-8') ?>)">Details</button>
+                      <button type="button" class="btn btn-sm btn-secondary me-1" onclick="openScopingModal(<?= htmlspecialchars(json_encode($m), ENT_QUOTES, 'UTF-8') ?>, 'details')">Market Details</button>
+                      <button type="button" class="btn btn-sm btn-info me-1" onclick="openScopingModal(<?= htmlspecialchars(json_encode($m), ENT_QUOTES, 'UTF-8') ?>, 'print')">Print</button>
                       <form method="post" onsubmit="return confirm('Delete this record?');" style="display:inline">
                           <input type="hidden" name="scoping_id" value="<?=htmlspecialchars($m['scoping_id'])?>">
                           <input type="hidden" name="delete_scoping" value="1">
@@ -576,7 +705,7 @@ $scopings = $pdo->query($scopingsSql)->fetchAll();
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Market Scoping Details</h5>
+                <h5 class="modal-title" id="detailsModalLabel">Market Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -609,112 +738,239 @@ function formatDate(dateStr) {
     }
 }
 
-function loadScopingDetails(record) {
-    let html = '<div class="container-fluid p-0">';
-    html += '<div class="row mb-3">';
-    html += '<div class="col-md-6"><strong>Project:</strong> ' + (record.project_name || 'N/A') + '</div>';
-    html += '<div class="col-md-6"><strong>Category:</strong> ' + (record.category || 'Other') + '</div>';
-    html += '<div class="col-md-6"><strong>End User:</strong> ' + (record.end_user_unit || 'N/A') + '</div>';
-    html += '<div class="col-md-6"><strong>Representative:</strong> ' + (record.representative_name || 'N/A') + '</div>';
-    html += '<div class="col-md-6"><strong>Designation:</strong> ' + (record.designation || 'N/A') + '</div>';
-    html += '<div class="col-md-6"><strong>Budget:</strong> ' + formatCurrency(record.estimated_budget) + '</div>';
-    html += '<div class="col-md-6"><strong>Procuring Entity:</strong> ' + (record.procuring_entity || 'N/A') + '</div>';
-    html += '<div class="col-md-6"><strong>Status:</strong> ' + (record.status || 'Pending') + '</div>';
-    html += '</div>';
-    
-    html += '<h6 class="mt-3 mb-2">Period &amp; Delivery</h6>';
-    html += '<div class="row mb-3">';
-    const periodFrom = record.period_from_date ? formatDate(record.period_from_date) : (record.period_from_month && record.period_from_year ? String(record.period_from_month).padStart(2, '0') + '/' + record.period_from_year : 'N/A');
-    const periodTo = record.period_to_date ? formatDate(record.period_to_date) : (record.period_to_month && record.period_to_year ? String(record.period_to_month).padStart(2, '0') + '/' + record.period_to_year : 'N/A');
-    html += '<div class="col-md-6"><strong>Period:</strong> ' + periodFrom + ' - ' + periodTo + '</div>';
-    const deliveryDate = record.expected_delivery_date ? formatDate(record.expected_delivery_date) : (record.expected_delivery_month && record.expected_delivery_year ? String(record.expected_delivery_month).padStart(2, '0') + '/' + record.expected_delivery_year : 'N/A');
-    html += '<div class="col-md-6"><strong>Expected Delivery:</strong> ' + deliveryDate + '</div>';
-    html += '</div>';
-    
-    // Collect suppliers and quotes
-    let suppliers = [];
-    for (let i = 1; i <= 4; i++) {
-        const supplierId = 'supplier_' + i + '_name';
-        const quotationId = 'quotation_' + i;
-        if (record[supplierId] && record[quotationId]) {
-            suppliers.push({
-                name: record[supplierId],
-                quote: parseFloat(record[quotationId]) || 0,
-                index: i
-            });
+function loadPrintDetails(record) {
+    const quantity = record.item_quantity ? parseInt(record.item_quantity, 10) || 1 : 1;
+    const unitLabel = record.item_unit || 'unit';
+    const suppliers = [];
+    for (let i = 1; i <= 5; i++) {
+        const nameKey = 'supplier_' + i + '_name';
+        const quoteKey = 'quotation_' + i;
+        const qtyKey = 'supplier_qty_' + i;
+        const name = record[nameKey] || '';
+        const quote = record[quoteKey] ? parseFloat(record[quoteKey]) : null;
+        const quantity = record[qtyKey] ? parseInt(record[qtyKey], 10) : null;
+        if (name && quote !== null && !isNaN(quote)) {
+            suppliers.push({ name, quote, quantity });
         }
     }
-    
-    // Sort by quote ascending
-    suppliers.sort((a, b) => a.quote - b.quote);
-    
-    if (suppliers.length > 0) {
-        const lowestQuote = suppliers[0].quote;
-        const highestQuote = suppliers[suppliers.length - 1].quote;
-        const quoteRange = highestQuote - lowestQuote;
-        
-        html += '<h6 class="mt-3 mb-2"><i class="bi bi-graph-up"></i> Supplier Comparison & Analysis</h6>';
-        html += '<div class="table-responsive">';
-        html += '<table class="table table-sm table-hover">';
-        html += '<thead class="table-light"><tr><th>Rank</th><th>Supplier</th><th>Quotation</th><th>Variance</th><th>Status</th></tr></thead><tbody>';
-        
-        let rank = 1;
-        suppliers.forEach((supplier, idx) => {
-            const variance = supplier.quote - lowestQuote;
-            const percentVariance = quoteRange > 0 ? ((variance / lowestQuote) * 100).toFixed(2) : 0;
-            const isLowest = supplier.quote === lowestQuote;
-            const rowClass = isLowest ? 'table-success' : '';
-            
-            let statusBadge = '';
-            if (isLowest) {
-                statusBadge = '<span class="badge bg-success">Lowest</span>';
-            } else if (idx === suppliers.length - 1) {
-                statusBadge = '<span class="badge bg-danger">Highest</span>';
-            } else {
-                statusBadge = '<span class="badge bg-secondary">Mid</span>';
-            }
-            
-            html += '<tr class="' + rowClass + '">';
-            html += '<td><strong>' + rank + '</strong></td>';
-            html += '<td>' + supplier.name + '</td>';
-            html += '<td><strong>' + formatCurrency(supplier.quote) + '</strong></td>';
-            html += '<td>';
-            if (isLowest) {
-                html += '<span class="badge bg-success">Base</span>';
-            } else {
-                html += '<span class="text-danger">+' + formatCurrency(variance) + ' (' + percentVariance + '%)</span>';
-            }
-            html += '</td>';
-            html += '<td>' + statusBadge + '</td>';
-            html += '</tr>';
-            rank++;
+
+    let html = '<div class="container-fluid p-0">';
+    html += '<div class="report-header">';
+    html += '<div class="report-brand">';
+    html += '<img src="images/LOGO.jpg" alt="Logo" class="report-logo">';
+    html += '<div class="report-brand-text">';
+    html += '<div class="report-subheader">Republic of the Philippines</div>';
+    html += '<div class="report-subheader">Philippine Economic Zone Authority</div>';
+    html += '<div class="report-subheader">Cavite Economic Zone, Rosario, Cavite</div>';
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
+    html += '<div class="report-title">SUMMARY OF QUOTATIONS RECEIVED</div>';
+
+    html += '<div class="table-responsive">';
+    html += '<table class="table table-bordered report-table">';
+    html += '<thead class="table-light">';
+    html += '<tr>';
+    html += '<th rowspan="3" style="width:5%">ITEM NO.</th>';
+    html += '<th rowspan="3" style="width:5%">QTY.</th>';
+    html += '<th rowspan="3" style="width:7%">UNIT</th>';
+    html += '<th rowspan="3" style="width:28%">PARTICULARS</th>';
+    html += '<th class="suppliers-top-row" colspan="' + (suppliers.length * 2) + '">SUPPLIER</th>';
+    html += '</tr>';
+    html += '<tr>';
+    suppliers.forEach((supplier) => {
+        const qtyLabel = supplier.quantity !== null ? '<br><small>Qty: ' + supplier.quantity + '</small>' : '';
+        html += '<th class="supplier-header" colspan="2">' + supplier.name + qtyLabel + '</th>';
+    });
+    html += '</tr>';
+    html += '<tr>';
+    suppliers.forEach(() => {
+        html += '<th style="width:10%">Unit Price</th><th style="width:10%">Total Cost</th>';
+    });
+    html += '</tr>';
+    html += '</thead>';
+    html += '<tbody>';
+    html += '<tr>';
+    html += '<td>I.</td>';
+    html += '<td>' + quantity + '</td>';
+    html += '<td>' + unitLabel + '</td>';
+    html += '<td class="text-start">' + (record.project_name || 'N/A');
+    if (record.category) {
+        html += '<br><small class="text-muted">Category: ' + record.category + '</small>';
+    }
+    if (record.end_user_unit) {
+        html += '<br><small class="text-muted">End User Unit: ' + record.end_user_unit + '</small>';
+    }
+    html += '</td>';
+
+    suppliers.forEach((supplier) => {
+        const supplierQty = supplier.quantity || quantity;
+        const unitPrice = supplierQty > 0 ? supplier.quote / supplierQty : supplier.quote;
+        html += '<td>' + formatCurrency(unitPrice) + '</td>';
+        html += '<td>' + formatCurrency(supplier.quote) + '</td>';
+    });
+    html += '</tr>';
+
+    html += '<tr class="table-secondary">';
+    html += '<td colspan="4" class="text-end"><strong>TOTAL COST:</strong></td>';
+    suppliers.forEach((supplier) => {
+        html += '<td></td>';
+        html += '<td><strong>' + formatCurrency(supplier.quote) + '</strong></td>';
+    });
+    html += '</tr>';
+
+    const lowestQuote = suppliers.length ? Math.min(...suppliers.map(s => s.quote)) : null;
+    if (lowestQuote !== null) {
+        html += '<tr>';
+        html += '<td colspan="4" class="text-end"><strong>Lowest Quote</strong></td>';
+        suppliers.forEach((supplier) => {
+            html += '<td></td>';
+            html += '<td>' + (supplier.quote === lowestQuote ? '<strong>' + formatCurrency(lowestQuote) + '</strong>' : '') + '</td>';
         });
-        
-        html += '</tbody></table>';
-        html += '</div>';
-        
-        // Summary stats
-        html += '<div class="row mt-3 mb-3">';
-        html += '<div class="col-md-4 border-start ps-3"><strong>Lowest Quote:</strong><br><span class="text-success h5">₱' + lowestQuote.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</span> (' + suppliers[0].name + ')</div>';
-        
-        const avgQuote = suppliers.reduce((sum, s) => sum + s.quote, 0) / suppliers.length;
-        html += '<div class="col-md-4 border-start ps-3"><strong>Average Quote:</strong><br><span class="text-info h5">₱' + avgQuote.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</span></div>';
-        
-        const savingsVsAvg = avgQuote - lowestQuote;
-        const savingsPercentage = ((savingsVsAvg / avgQuote) * 100).toFixed(2);
-        html += '<div class="col-md-4 border-start ps-3"><strong>Potential Savings:</strong><br><span class="text-success h5">₱' + savingsVsAvg.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</span> (' + savingsPercentage + '%)</div>';
-        html += '</div>';
+        html += '</tr>';
     }
-    
-    if (record.report_link) {
-        html += '<div class="mt-3 mb-2"><strong>Report Link:</strong> <a href="' + record.report_link + '" target="_blank" class="btn btn-sm btn-outline-primary">View Report</a></div>';
-    }
-    
+
+    html += '</tbody>';
+    html += '</table>';
+    html += '</div>';
+
+    html += '<div class="report-footer">';
+    html += '<div class="signature-block">';
+    html += '<div class="signature-name">' + (record.representative_name || 'ARVIN A. EGARGUE') + '</div>';
+    html += '<div class="signature-role">' + (record.designation || 'ESA II - MIS') + '</div>';
+    html += '<div class="text-muted">Prepared by</div>';
+    html += '</div>';
+    html += '<div class="signature-block">';
+    html += '<div class="signature-name">Rosario S. Sucgang</div>';
+    html += '<div class="signature-role">DC II - ASD</div>';
+    html += '<div class="text-muted">Noted by</div>';
+    html += '</div>';
+    html += '</div>';
+
     if (record.analysis) {
         html += '<div class="mt-3 p-3 bg-light border rounded"><strong>Analysis / Notes:</strong><br>' + record.analysis.replace(/\n/g, '<br>') + '</div>';
     }
-    html += '</div>'; // close container-fluid wrapper
+
+    html += '</div>';
     document.getElementById('detailsContent').innerHTML = html;
+}
+
+function loadScopingDetails(record) {
+    const quantity = record.item_quantity ? parseInt(record.item_quantity, 10) || 1 : 1;
+    const unitLabel = record.item_unit || 'unit';
+    const suppliers = [];
+    for (let i = 1; i <= 5; i++) {
+        const nameKey = 'supplier_' + i + '_name';
+        const quoteKey = 'quotation_' + i;
+        const qtyKey = 'supplier_qty_' + i;
+        const name = record[nameKey] || '';
+        const quote = record[quoteKey] ? parseFloat(record[quoteKey]) : null;
+        const quantity = record[qtyKey] ? parseInt(record[qtyKey], 10) : null;
+        if (name && quote !== null && !isNaN(quote)) {
+            suppliers.push({ name, quote, quantity });
+        }
+    }
+
+    let html = '<div class="container-fluid p-0">';
+    html += '<div class="report-header">';
+    html += '<div class="report-brand">';
+    html += '<img src="images/LOGO.jpg" alt="Logo" class="report-logo">';
+    html += '<div class="report-brand-text">';
+    html += '<div class="report-subheader">Republic of the Philippines</div>';
+    html += '<div class="report-subheader">Philippine Economic Zone Authority</div>';
+    html += '<div class="report-subheader">Cavite Economic Zone, Rosario, Cavite</div>';
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
+    html += '<div class="row mb-3">';
+    html += '<div class="col-md-6 text-start"><strong>Project:</strong> ' + (record.project_name || 'N/A') + '<br>';
+    html += '<strong>End User:</strong> ' + (record.end_user_unit || 'N/A') + '<br>';
+    html += '<strong>Designation:</strong> ' + (record.designation || 'N/A') + '</div>';
+    html += '<div class="col-md-6 text-start"><strong>Category:</strong> ' + (record.category || 'Other') + '<br>';
+    html += '<strong>Representative:</strong> ' + (record.representative_name || 'N/A') + '<br>';
+    html += '<strong>Status:</strong> ' + (record.status || 'Pending') + '</div>';
+    html += '</div>';
+
+    html += '<div class="row mb-3">';
+    html += '<div class="col-md-6 text-start"><strong>Procuring Entity:</strong> ' + (record.procuring_entity || 'Philippine Economic Zone Authority') + '</div>';
+    html += '<div class="col-md-6 text-start"><strong>Budget:</strong> ' + formatCurrency(record.estimated_budget) + '</div>';
+    html += '</div>';
+
+    const periodFrom = record.period_from_date ? formatDate(record.period_from_date) : (record.period_from_month && record.period_from_year ? String(record.period_from_month).padStart(2, '0') + '/' + record.period_from_year : 'N/A');
+    const periodTo = record.period_to_date ? formatDate(record.period_to_date) : (record.period_to_month && record.period_to_year ? String(record.period_to_month).padStart(2, '0') + '/' + record.period_to_year : 'N/A');
+    html += '<div class="row mb-3">';
+    html += '<div class="col-md-6 text-start"><strong>Period:</strong> ' + periodFrom + ' - ' + periodTo + '</div>';
+    html += '<div class="col-md-6 text-start"><strong>Expected Delivery:</strong> ' + (record.expected_delivery_date ? formatDate(record.expected_delivery_date) : 'N/A') + '</div>';
+    html += '</div>';
+
+    html += '<h6 class="mt-3 mb-2">Supplier Comparison & Analysis</h6>';
+    html += '<div class="table-responsive">';
+    html += '<table class="table table-sm table-hover report-table">';
+    html += '<thead class="table-light"><tr><th>Rank</th><th>Supplier</th><th>Quotation</th><th>Variance</th><th>Status</th></tr></thead><tbody>';
+
+    suppliers.sort((a, b) => a.quote - b.quote);
+    const lowest = suppliers.length ? suppliers[0].quote : null;
+    let rank = 1;
+    suppliers.forEach((supplier, idx) => {
+        const variance = lowest !== null ? supplier.quote - lowest : 0;
+        const percentVariance = lowest ? ((variance / lowest) * 100).toFixed(2) : '0.00';
+        const isLowest = supplier.quote === lowest;
+        const rowClass = isLowest ? 'table-success' : '';
+        let statusBadge = isLowest ? '<span class="badge bg-success">Lowest</span>' : (idx === suppliers.length - 1 ? '<span class="badge bg-danger">Highest</span>' : '<span class="badge bg-secondary">Mid</span>');
+        html += '<tr class="' + rowClass + '">';
+        html += '<td>' + rank + '</td>';
+        const supplierQtyText = supplier.quantity !== null ? ' <small>(Qty: ' + supplier.quantity + ')</small>' : '';
+        html += '<td>' + supplier.name + supplierQtyText + '</td>';
+        html += '<td>' + formatCurrency(supplier.quote) + '</td>';
+        html += '<td>' + (isLowest ? '<span class="badge bg-success">Base</span>' : '<span class="text-danger">+' + formatCurrency(variance) + ' (' + percentVariance + '%)</span>') + '</td>';
+        html += '<td>' + statusBadge + '</td>';
+        html += '</tr>';
+        rank++;
+    });
+    html += '</tbody></table>';
+
+    if (lowest !== null) {
+        const average = suppliers.reduce((sum, s) => sum + s.quote, 0) / suppliers.length;
+        const savings = average - lowest;
+        const savingsPct = average ? ((savings / average) * 100).toFixed(2) : '0.00';
+        html += '<div class="row mt-3 mb-3">';
+        html += '<div class="col-md-4"><strong>Lowest Quote:</strong><br><span class="text-success h6">' + formatCurrency(lowest) + '</span></div>';
+        html += '<div class="col-md-4"><strong>Average Quote:</strong><br><span class="text-info h6">' + formatCurrency(average) + '</span></div>';
+        html += '<div class="col-md-4"><strong>Potential Savings:</strong><br><span class="text-success h6">' + formatCurrency(savings) + ' (' + savingsPct + '%)</span></div>';
+        html += '</div>';
+    }
+
+    html += '<div class="report-footer">';
+    html += '<div class="signature-block">';
+    html += '<div class="signature-name">' + (record.representative_name || 'ARVIN A. EGARGUE') + '</div>';
+    html += '<div class="signature-role">' + (record.designation || 'ESA II - MIS') + '</div>';
+    html += '<div class="text-muted">Prepared by</div>';
+    html += '</div>';
+    html += '<div class="signature-block">';
+    html += '<div class="signature-name">Rosario S. Sucgang</div>';
+    html += '<div class="signature-role">DC II - ASD</div>';
+    html += '<div class="text-muted">Noted by</div>';
+    html += '</div>';
+    html += '</div>';
+
+    if (record.analysis) {
+        html += '<div class="mt-3 p-3 bg-light border rounded"><strong>Analysis / Notes:</strong><br>' + record.analysis.replace(/\n/g, '<br>') + '</div>';
+    }
+
+    html += '</div>';
+    document.getElementById('detailsContent').innerHTML = html;
+}
+
+function openScopingModal(record, mode) {
+    document.getElementById('detailsModalLabel').textContent = mode === 'details' ? 'Market Details' : 'Print Preview';
+    if (mode === 'details') {
+        loadScopingDetails(record);
+    } else {
+        loadPrintDetails(record);
+    }
+    const modalEl = document.getElementById('detailsModal');
+    const bsModal = new bootstrap.Modal(modalEl);
+    bsModal.show();
 }
 
 // Money input formatting
@@ -762,10 +1018,11 @@ function printScopingDetails(event) {
     clone.style.position = 'absolute';
     clone.style.left = '-9999px';
     clone.style.top = '0';
-    clone.style.width = '900px';
-    clone.style.maxWidth = '900px';
+    clone.style.width = '1120px';
+    clone.style.maxWidth = '1120px';
     clone.style.background = '#ffffff';
-    clone.style.padding = '24px';
+    clone.style.padding = '20px 10px 20px 25px';
+    clone.style.boxSizing = 'border-box';
     document.body.appendChild(clone);
 
     html2canvas(clone, {
@@ -779,7 +1036,7 @@ function printScopingDetails(event) {
     }).then(function(canvas) {
         const { jsPDF } = window.jspdf;
         const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdf = new jsPDF('l', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
         const imgWidth = pdfWidth;

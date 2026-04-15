@@ -32,6 +32,8 @@ $validCategories = ['ICT Equipment', 'Office Supplies', 'Infrastructure', 'Maint
 
 $editPlan = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_ppmp'])) {
+    $isAutoSave = isset($_POST['auto_save']);
+    
     // Validate category
     $category = isset($_POST['category']) ? trim($_POST['category']) : '';
     if (empty($category) || !in_array($category, $validCategories, true)) {
@@ -62,8 +64,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_ppmp'])) {
             $_POST['status'] ?: 'Pending',
         ]);
     }
-    header('Location: ppmp.php');
-    exit;
+    if (!$isAutoSave) {
+        header('Location: ppmp.php');
+        exit;
+    }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_ppmp']) && !empty($_POST['ppmp_id'])) {
@@ -93,7 +97,7 @@ $plans = $pdo->query('SELECT * FROM ppmp_plans ORDER BY created_at DESC')->fetch
             <a href="rfq.php" class="btn btn-sm btn-outline-success">RFQ</a>
         </div>
     </div>
-    <form method="post" class="row g-3 mb-4">
+    <form method="post" class="row g-3 mb-4" id="ppmpForm">
         <input type="hidden" name="save_ppmp" value="1">
         <input type="hidden" name="ppmp_id" value="<?= htmlspecialchars($editPlan['ppmp_id'] ?? '') ?>">
         <div class="col-md-12">
@@ -174,5 +178,65 @@ $plans = $pdo->query('SELECT * FROM ppmp_plans ORDER BY created_at DESC')->fetch
         });
     });
 })();
+
+<script>
+let autoSaveTimer;
+let isAutoSaving = false;
+
+function autoSave() {
+    if (isAutoSaving) return;
+    isAutoSaving = true;
+    
+    const form = document.getElementById('ppmpForm');
+    if (!form) return;
+    const formData = new FormData(form);
+    formData.append('auto_save', '1');
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.text())
+    .then(() => {
+        // Show saved indicator
+        showSaveIndicator();
+        isAutoSaving = false;
+    })
+    .catch(() => {
+        isAutoSaving = false;
+    });
+}
+
+function showSaveIndicator() {
+    let indicator = document.getElementById('autoSaveIndicator');
+    if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.id = 'autoSaveIndicator';
+        indicator.style.cssText = 'position:fixed;top:20px;right:20px;background:#28a745;color:white;padding:10px;border-radius:4px;z-index:1000;';
+        document.body.appendChild(indicator);
+    }
+    indicator.textContent = 'Auto-saved';
+    indicator.style.display = 'block';
+    setTimeout(() => {
+        indicator.style.display = 'none';
+    }, 2000);
+}
+
+function startAutoSave() {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(autoSave, 2000); // Save after 2 seconds of inactivity
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('ppmpForm');
+    if (form) {
+        const inputs = form.querySelectorAll('input, textarea, select');
+        inputs.forEach(input => {
+            input.addEventListener('input', startAutoSave);
+            input.addEventListener('change', startAutoSave);
+        });
+    }
+});
 </script>
+
 </body></html>
